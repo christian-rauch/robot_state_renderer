@@ -1,0 +1,7 @@
+sensor_msgs/CameraInfo  camera_info
+geometry_msgs/Pose      robot_pose
+geometry_msgs/Pose      camera_pose
+sensor_msgs/JointState  state
+---
+sensor_msgs/Image       mask
+sensor_msgs/Image       points
