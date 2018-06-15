@@ -190,14 +190,19 @@ public:
         shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
         shader.Unbind();
 
-        robot.render(shader, true);
+        robot.render(shader, false);
 
         glFlush();
 
         mutex.unlock();
 
+        // read depth in OpenGL coordinates
         cv::Mat_<float> depth_gl(h, w);
         glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
+
+        // read green channel as label
+        cv::Mat_<uint8_t> label(h, w);
+        glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
 
         fbo_buffer.Unbind();
 
@@ -214,18 +219,19 @@ public:
         // - flip around x-axis (rotate pi around x-axis)
         // - inverse z
         cv::flip(points, points, 0);
+        cv::flip(label, label, 0);
         cv::Mat zs;
         cv::extractChannel(points, zs, 2);
         zs *= -1;
         cv::insertChannel(zs, points, 2);
 
         // mask
-        cv_bridge::CvImage cv_ptr(req.state.header, "mono8", (zs!=0));
-        cv_ptr.toImageMsg(res.mask);
+        cv_bridge::CvImage mask_img(req.state.header, "mono8", label);
+        mask_img.toImageMsg(res.mask);
 
         // points
-        cv_bridge::CvImage cv_ptr2(req.state.header, "64FC3", points);
-        cv_ptr2.toImageMsg(res.points);
+        cv_bridge::CvImage points_img(req.state.header, "64FC3", points);
+        points_img.toImageMsg(res.points);
 
         return true;
     }
