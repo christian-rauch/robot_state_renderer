@@ -129,8 +129,7 @@ public:
 
         // check dimensions
         if(req.state.name.size()!=req.state.position.size()) {
-            ROS_ERROR_STREAM("name and value mismatch");
-            return true;
+            throw std::runtime_error("number of joint names ("+std::to_string(req.state.name.size())+") and values ("+std::to_string(req.state.position.size())+") mismatch");
         }
 
         // camera pose
