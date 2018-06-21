@@ -29,9 +29,10 @@ class StateRenderer {
 public:
     StateRenderer(int argc, char *argv[]) {
 
-        // transform from OpenGL to camera frame
+        // transform from OpenGL (y up, z backward) to camera frame (y down, z forward)
         // http://www.songho.ca/opengl/gl_projectionmatrix.html#perspective
-        G << 1, 0, 0, 0,
+        G.matrix() <<
+             1, 0, 0, 0,
              0,-1, 0, 0,
              0, 0,-1, 0,
              0, 0, 0, 1;
@@ -183,7 +184,7 @@ public:
 
         robot_cam.SetProjectionMatrix(pangolin::ProjectionMatrix(
             w, h, fu, fv, cx, cy, z_near, z_far));
-        robot_cam.SetModelViewMatrix(G*T_wc.Inverse());
+        robot_cam.SetModelViewMatrix(G.matrix()*T_wc.Inverse());
 
         robot_display.SetAspect(w/double(h));
 
@@ -218,21 +219,18 @@ public:
         cv::Mat_<cv::Vec3d> points(h, w);
         for(double y(0); y<h; y++) {
             for(double x(0); x<w; x++) {
-                if(depth_gl(y,x)<1.0) {
+                if(depth_gl(y,x)<1.0f) {
                     robot_display.GetCamCoordinates(robot_cam, x, y, depth_gl(y,x), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
                 }
             }
         }
 
-        // from OpenGL to camera frame: rotate by pi around x-axis
-        // - flip around x-axis (rotate pi around x-axis)
-        // - inverse z
+        // transform 3D coordinates from OpenGL to camera frame
+        Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w) = G * Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w);
+
+        // transform 2D pixel coordinates from OpenGL to camera frame (rotate by pi around x-axis)
         cv::flip(points, points, 0);
         cv::flip(label, label, 0);
-        cv::Mat zs;
-        cv::extractChannel(points, zs, 2);
-        zs *= -1;
-        cv::insertChannel(zs, points, 2);
 
         // mask
         cv_bridge::CvImage mask_img(req.state.header, "mono8", label);
@@ -255,7 +253,7 @@ private:
     pangolin::GlTexture color_buffer;
     pangolin::GlRenderBuffer depth_buffer;
 
-    Eigen::Matrix4d G;
+    Eigen::Affine3d G;
 
     pangolin::OpenGlRenderState robot_cam;
 
