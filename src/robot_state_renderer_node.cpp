@@ -132,19 +132,19 @@ public:
             throw std::runtime_error("number of joint names ("+std::to_string(req.state.name.size())+") and values ("+std::to_string(req.state.position.size())+") mismatch");
         }
 
-        // camera pose
+        // camera pose, T_wc
         Eigen::Isometry3d cam_pose;
         tf::poseMsgToEigen(req.camera_pose, cam_pose);
 
-        // robot pose
+        // robot pose, T_wr
         Eigen::Isometry3d robot_pose;
         tf::poseMsgToEigen(req.robot_pose, robot_pose);
 
         mutex.lock();
 
-        robot.T_cr = pangolin::OpenGlMatrix(cam_pose.inverse().matrix());
-        robot.T_wr = pangolin::OpenGlMatrix(robot_pose.inverse().matrix());
-        const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
+        const pangolin::OpenGlMatrix T_wc(cam_pose.matrix());
+        robot.T_wr = pangolin::OpenGlMatrix(robot_pose.matrix());
+        robot.T_cr = T_wc.Inverse()*robot.T_wr;
 
         // clear and set joint values
         robot.joints.clear();
@@ -153,6 +153,16 @@ public:
         }
 
         robot.updateFrames();
+
+        for(const std::pair<std::string, uint> &kv : robot.link_label_id) {
+            res.link_names.push_back(kv.first);
+            // transformation from root to link
+            const pangolin::OpenGlMatrix T_rl = RobotModel::MatrixFromFrame(robot.getFramePose(kv.first));
+            const pangolin::OpenGlMatrix T_cl = robot.T_cr * T_rl;
+            geometry_msgs::Pose pose;
+            tf::poseEigenToMsg(Eigen::Affine3d(T_cl), pose);
+            res.link_poses.push_back(pose);
+        }
 
         camera_info = req.camera_info;
 
