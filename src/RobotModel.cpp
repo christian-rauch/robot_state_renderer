@@ -170,6 +170,7 @@ KDL::Frame RobotModel::getFramePose(const std::string& frame) {
             else {
                 // set not provided joint values to 0
                 joint_values.push_back(0);
+                std::cout << "Setting joint '" << jname << "' to 0." << std::endl;
             }
         }
     }
