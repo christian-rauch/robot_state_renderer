@@ -5,7 +5,6 @@
 #include <RobotModel.hpp>
 #include <pangolin/pangolin.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
-#include <pcl_ros/transforms.h>
 
 
 static const std::string LabelVertexShader = \
@@ -30,15 +29,6 @@ static const std::string LabelFragmentShader = \
 class StateRenderer {
 public:
     StateRenderer(int argc, char *argv[]) {
-
-        // transform from OpenGL (y up, z backward) to camera frame (y down, z forward)
-        // http://www.songho.ca/opengl/gl_projectionmatrix.html#perspective
-        G.matrix() <<
-             1, 0, 0, 0,
-             0,-1, 0, 0,
-             0, 0,-1, 0,
-             0, 0, 0, 1;
-
         ros::init(argc, argv, "StateRenderer");
         n = std::make_shared<ros::NodeHandle>();
 
@@ -53,7 +43,7 @@ public:
 
         pangolin::OpenGlRenderState view_cam(
             pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
-            pangolin::ModelViewLookAt(0,-1,1, 0,0,0, pangolin::AxisY)
+            pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
         );
         pangolin::View &view_display = pangolin::Display("free view")
                 .SetAspect(640.0/480.0)
@@ -184,9 +174,12 @@ public:
         const double z_near = 0.0001;
         const double z_far = 1000;
 
-        robot_cam.SetProjectionMatrix(pangolin::ProjectionMatrix(
+        // camera coordinate system
+        // http://www.songho.ca/opengl/gl_projectionmatrix.html#perspective
+        // x - Right, y - Down, z - Front
+        robot_cam.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(
             w, h, fu, fv, cx, cy, z_near, z_far));
-        robot_cam.SetModelViewMatrix(G.matrix()*T_wc.Inverse());
+        robot_cam.SetModelViewMatrix(T_wc.Inverse());
 
         robot_display.SetAspect(w/double(h));
 
@@ -239,12 +232,8 @@ public:
             }
         }
 
-        pcl_ros::transformPointCloud(G.matrix().cast<float>(), res.point_cloud, res.point_cloud);
-
-        // transform 3D coordinates from OpenGL to camera frame
-        Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w) = G * Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w);
-
-        // transform 2D pixel coordinates from OpenGL to camera frame (rotate by pi around x-axis)
+        // transform 2D pixel coordinates from OpenGL (RUB) to camera frame (RDF)
+        // rotate by pi around x-axis
         cv::flip(points, points, 0);
         cv::flip(label, label, 0);
 
@@ -268,8 +257,6 @@ private:
 
     pangolin::GlTexture color_buffer;
     pangolin::GlRenderBuffer depth_buffer;
-
-    Eigen::Affine3d G;
 
     pangolin::OpenGlRenderState robot_cam;
 
