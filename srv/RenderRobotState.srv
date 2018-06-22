@@ -5,5 +5,6 @@ sensor_msgs/JointState  state
 ---
 sensor_msgs/Image       mask        # labels (0: background, >0: parts)
 sensor_msgs/Image       points      # points in camera frame
+sensor_msgs/PointCloud2 point_cloud # point cloud in camera frame
 string[]                link_names
 geometry_msgs/Pose[]    link_poses  # link poses in camera frame

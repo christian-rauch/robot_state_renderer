@@ -4,6 +4,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <RobotModel.hpp>
 #include <pangolin/pangolin.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <pcl_ros/transforms.h>
 
 
 static const std::string LabelVertexShader = \
@@ -216,14 +218,28 @@ public:
 
         fbo_buffer.Unbind();
 
+        res.point_cloud.height = h;
+        res.point_cloud.width  = w;
+        res.point_cloud.header = req.camera_info.header;
+
+        sensor_msgs::PointCloud2Modifier pcd_modifier(res.point_cloud);
+        pcd_modifier.setPointCloud2FieldsByString(1, "xyz");
+        sensor_msgs::PointCloud2Iterator<float> iter_xyz(res.point_cloud, "x");
+
         cv::Mat_<cv::Vec3d> points(h, w);
         for(double y(0); y<h; y++) {
             for(double x(0); x<w; x++) {
                 if(depth_gl(y,x)<1.0f) {
                     robot_display.GetCamCoordinates(robot_cam, x, y, depth_gl(y,x), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
+                    iter_xyz[0] = float(points(y,x)[0]);
+                    iter_xyz[1] = float(points(y,x)[1]);
+                    iter_xyz[2] = float(points(y,x)[2]);
+                    ++iter_xyz;
                 }
             }
         }
+
+        pcl_ros::transformPointCloud(G.matrix().cast<float>(), res.point_cloud, res.point_cloud);
 
         // transform 3D coordinates from OpenGL to camera frame
         Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w) = G * Eigen::Map<Eigen::Matrix3Xd>((double*)points.data, 3, h*w);
@@ -233,11 +249,11 @@ public:
         cv::flip(label, label, 0);
 
         // mask
-        cv_bridge::CvImage mask_img(req.state.header, "mono8", label);
+        cv_bridge::CvImage mask_img(req.camera_info.header, "mono8", label);
         mask_img.toImageMsg(res.mask);
 
         // points
-        cv_bridge::CvImage points_img(req.state.header, "64FC3", points);
+        cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
         points_img.toImageMsg(res.points);
 
         return true;

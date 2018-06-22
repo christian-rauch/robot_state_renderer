@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   cv_bridge
   eigen_conversions
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
