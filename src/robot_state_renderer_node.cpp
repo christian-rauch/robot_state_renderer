@@ -164,8 +164,8 @@ public:
         pangolin::View &robot_display = pangolin::Display("robot view")
                 .SetHandler(new pangolin::Handler3D(robot_cam));
 
-        const int w = camera_info.width;
-        const int h = camera_info.height;
+        const int w = int(camera_info.width);
+        const int h = int(camera_info.height);
         const double fu = camera_info.K[0];
         const double fv = camera_info.K[4];
         const double cx = camera_info.K[2];
@@ -211,23 +211,13 @@ public:
 
         fbo_buffer.Unbind();
 
-        res.point_cloud.height = h;
-        res.point_cloud.width  = w;
-        res.point_cloud.header = req.camera_info.header;
-
-        sensor_msgs::PointCloud2Modifier pcd_modifier(res.point_cloud);
-        pcd_modifier.setPointCloud2FieldsByString(1, "xyz");
-        sensor_msgs::PointCloud2Iterator<float> iter_xyz(res.point_cloud, "x");
-
         cv::Mat_<cv::Vec3d> points(h, w);
-        for(double y(0); y<h; y++) {
-            for(double x(0); x<w; x++) {
+        for(int y(0); y<h; y++) {
+            for(int x(0); x<w; x++) {
                 if(depth_gl(y,x)<1.0f) {
-                    robot_display.GetCamCoordinates(robot_cam, x, y, depth_gl(y,x), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
-                    iter_xyz[0] = float(points(y,x)[0]);
-                    iter_xyz[1] = float(points(y,x)[1]);
-                    iter_xyz[2] = float(points(y,x)[2]);
-                    ++iter_xyz;
+                    robot_display.GetCamCoordinates(robot_cam, x, y, double(depth_gl(y,x)), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
+                    points(y,x)[0] = (x - cx) * points(y,x)[2] / fu;
+                    points(y,x)[1] = - (y - cy) * points(y,x)[2] / fv;
                 }
             }
         }
@@ -236,6 +226,24 @@ public:
         // rotate by pi around x-axis
         cv::flip(points, points, 0);
         cv::flip(label, label, 0);
+
+        res.point_cloud.height = uint(h);
+        res.point_cloud.width  = uint(w);
+        res.point_cloud.header = req.camera_info.header;
+        res.point_cloud.is_dense = false;
+        res.point_cloud.is_bigendian = false;
+
+        sensor_msgs::PointCloud2Modifier pcd_modifier(res.point_cloud);
+        pcd_modifier.setPointCloud2FieldsByString(1, "xyz");
+        sensor_msgs::PointCloud2Iterator<float> iter_xyz(res.point_cloud, "x");
+        for(int y(0); y<h; y++) {
+            for(int x(0); x<w; x++) {
+                iter_xyz[0] = float(points(y,x)[0]);
+                iter_xyz[1] = float(points(y,x)[1]);
+                iter_xyz[2] = float(points(y,x)[2]);
+                ++iter_xyz;
+            }
+        }
 
         // mask
         cv_bridge::CvImage mask_img(req.camera_info.header, "mono8", label);
