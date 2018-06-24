@@ -182,13 +182,15 @@ public:
         robot_cam.SetModelViewMatrix(T_wc.Inverse());
 
         robot_display.SetAspect(w/double(h));
+        pangolin::Viewport offscreen_view(0,0,w,h);
 
         color_buffer.Reinitialise(w,h);
         depth_buffer.Reinitialise(w,h);
         pangolin::GlFramebuffer fbo_buffer(color_buffer, depth_buffer);
 
         fbo_buffer.Bind();
-        glViewport(0,0,w,h);
+        offscreen_view.Activate();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Bind();
@@ -215,9 +217,7 @@ public:
         for(int y(0); y<h; y++) {
             for(int x(0); x<w; x++) {
                 if(depth_gl(y,x)<1.0f) {
-                    robot_display.GetCamCoordinates(robot_cam, x, y, double(depth_gl(y,x)), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
-                    points(y,x)[0] = (x - cx) * points(y,x)[2] / fu;
-                    points(y,x)[1] = - (y - cy) * points(y,x)[2] / fv;
+                    offscreen_view.GetCamCoordinates(robot_cam, x, y, double(depth_gl(y,x)), points(y,x)[0], points(y,x)[1], points(y,x)[2]);
                 }
             }
         }
