@@ -68,6 +68,8 @@ public:
 
         service = n->advertiseService("render", &StateRenderer::render, this);
 
+        ros::Rate r(60);
+
         while(!pangolin::ShouldQuit()) {
             // visualisation
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -111,6 +113,7 @@ public:
             pangolin::FinishFrame();
 
             ros::spinOnce();
+            r.sleep();
         }
     }
 
