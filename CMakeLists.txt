@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   cv_bridge
   eigen_conversions
+  roslib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -144,7 +145,7 @@ include_directories(
 add_library(meshloader src/MeshLoader.cpp src/Mesh.cpp)
 target_link_libraries(meshloader ${assimp_LIBRARIES})
 add_library(robot_model src/RobotModel.cpp src/kdl_parser.cpp)
-target_link_libraries(robot_model meshloader ${Pangolin_LIBRARIES} stdc++fs ${urdfdom_LIBRARIES})
+target_link_libraries(robot_model meshloader ${Pangolin_LIBRARIES} stdc++fs ${urdfdom_LIBRARIES} ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

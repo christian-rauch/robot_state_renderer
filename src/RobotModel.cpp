@@ -11,6 +11,8 @@
 
 #define PACKAGE_PATH_URI_SCHEME "package://"
 
+#include <ros/package.h>
+
 namespace fs = std::experimental::filesystem;
 
 // find the file "package.xml" for obtaining the root folder of our mesh
@@ -53,7 +55,7 @@ void RobotModel::parseURDF(const std::string &urdf_path) {
     }
 
     // get location of urdf package for mesh path
-    std::string urdf_dir = urdf_path.substr(0, urdf_path.find_last_of('/'));
+    const std::string urdf_dir = urdf_path.substr(0, urdf_path.find_last_of('/'));
     mesh_package_path = getROSPackagePath(urdf_dir);
 }
 
@@ -72,11 +74,25 @@ void RobotModel::loadLinkMeshes() {
                 std::string mesh_path = dynamic_cast<urdf::Mesh*>(&*l->visual->geometry)->filename;
 
                 if(mesh_path.find(PACKAGE_PATH_URI_SCHEME) != std::string::npos) {
-                    // we need to replace "package://" by full path
-                    boost::algorithm::replace_first(mesh_path, PACKAGE_PATH_URI_SCHEME, mesh_package_path);
+                    // given as ROS package url
+                    // we need to replace "package://" by package path
+                    std::string mod_url = mesh_path;
+                    mod_url.erase(0, strlen(PACKAGE_PATH_URI_SCHEME));
+                    const size_t pos = mod_url.find("/");
+                    const std::string package_path = ros::package::getPath(mod_url.substr(0, pos));
+                    mod_url.erase(0, pos);
+
+                    if(package_path.size()!=0) {
+                        // found ROS package in workspace
+                        mesh_path = package_path + mod_url;
+                    }
+                    else {
+                        // manually replace ROS package path
+                        boost::algorithm::replace_first(mesh_path, PACKAGE_PATH_URI_SCHEME, mesh_package_path);
+                    }
                 }
                 else {
-                    // prepend full path
+                    // given as relative path, prepend base path
                     mesh_path = mesh_package_path + mesh_path;
                 }
 
