@@ -175,9 +175,9 @@ public:
         const double cy = camera_info.K[5];
 
         // check camera parameter
-        if(w*h==0)        throw std::runtime_error("invalid camera dimension");
-        if(!(fu*fv>0.0))  throw std::runtime_error("invalid focal length");
-        if(!(cx*cy>0.0))  throw std::runtime_error("invalid camera centre");
+        if(w*h==0)        ROS_WARN_STREAM("invalid camera dimension");
+        if(!(fu*fv>0.0))  ROS_WARN_STREAM("invalid focal length");
+        if(!(cx*cy>0.0))  ROS_WARN_STREAM("invalid camera centre");
 
         const double z_near = 0.0001;
         const double z_far = 1000;
