@@ -121,6 +121,8 @@ public:
 
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
 
+//        const auto tstart = std::chrono::high_resolution_clock::now();
+
         // set state
 
         // check dimensions
@@ -230,6 +232,60 @@ public:
             }
         }
 
+//        Eigen::VectorXf xx = Eigen::VectorXf::LinSpaced(w,0,w-1).colwise().replicate(h);
+//        Eigen::VectorXf yy = Eigen::VectorXf::LinSpaced(w*h,0,h-1);
+////        std::cout << xx.size() << ", " << yy.size() << std::endl;
+//        std::vector<float> xxv(xx.data(), xx.data()+xx.size());
+//        std::vector<float> yyv(yy.data(), yy.data()+yy.size());
+//        std::vector<float> zzv((float*)depth_gl.data, (float*)depth_gl.data+(depth_gl.rows*depth_gl.cols));
+
+////        std::cout << xxv.size() << ", " << yyv.size() << ", " << zzv.size() << std::endl;
+////        std::cout << xx.size() << ", " << yy.size() << std::endl;
+////        std::cout << xx.transpose() << ", " << yy.transpose() << std::endl;
+
+////        std::vector<double> points_x;
+////        std::vector<double> points_y;
+////        std::vector<double> points_z;
+//        Eigen::VectorXd points_x;
+//        Eigen::VectorXd points_y;
+//        Eigen::VectorXd points_z;
+//        offscreen_view.GetCamCoordinatesList(robot_cam, xxv, yyv, zzv, points_x, points_y, points_z);
+
+////        std::cout << points_x.size() << ", " << points_y.size() << ", " << points_z.size() << std::endl;
+
+////        std::cout << points_x.minCoeff() << ", " << points_x.maxCoeff() << std::endl;
+
+////        std::cout << *std::min_element(points_x.begin(), points_x.end()) << ", " << *std::max_element(points_x.begin(), points_x.end()) << std::endl;
+
+////        std::cout << "points_x[1] " << points_x[1] << std::endl;
+
+//        //Eigen::Map<Eigen::MatrixXd> lala(points_x.data(), w, h);
+////        Eigen::Map<Eigen::VectorXd> lala(&points_x[0], w*h);
+////        std::cout << lala.minCoeff() << ", " << lala.maxCoeff() << std::endl;
+
+////        std::cout << "lala1 " << lala[1] << std::endl;
+
+////        for(uint i =0; i<w*h; i++) {
+////            std::cout << points_x[i] << " : " << lala[i] << std::endl;
+////        }
+
+//        cv::Mat_<double> px_img(h, w, points_x.data());
+//        cv::Mat_<double> py_img(h, w, points_y.data());
+//        cv::Mat_<double> pz_img(h, w, points_z.data());
+////        cv::Mat px_img(h, w, CV_64F, points_x.data());
+////        cv::Mat py_img(h, w, CV_64F, points_y.data());
+////        cv::Mat pz_img(h, w, CV_64F, points_z.data());
+////        cv::Mat_<double> px_img(h, w);
+////        cv::Mat_<double> py_img(h, w);
+////        cv::Mat_<double> pz_img(h, w);
+////        std::memcpy(px_img.data, points_x.data(), sizeof(double)*w*h);
+
+////        double min, max;
+////        cv::minMaxLoc(px_img, &min, &max);
+////        std::cout << min << ", " << max << std::endl;
+
+//        cv::merge({px_img, py_img, pz_img}, points);
+
         // transform 2D pixel coordinates from OpenGL (RUB) to camera frame (RDF)
         // rotate by pi around x-axis
         cv::flip(points, points, 0);
@@ -260,6 +316,10 @@ public:
         // points
         cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
         points_img.toImageMsg(res.points);
+
+//        const auto tend = std::chrono::high_resolution_clock::now();
+//        const float duration = std::chrono::duration<float>(tend - tstart).count();
+//        std::cout << "rendering duration: " << duration << " s" << std::endl;
 
         return true;
     }
