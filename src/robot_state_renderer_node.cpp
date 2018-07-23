@@ -6,6 +6,8 @@
 #include <pangolin/pangolin.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+//#define BENCHMARK
+
 
 static const std::string LabelVertexShader = \
         "#version 300 es\n"
@@ -121,9 +123,15 @@ public:
 
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
 
-//        const auto tstart = std::chrono::high_resolution_clock::now();
+#ifdef BENCHMARK
+        const auto tstart = std::chrono::high_resolution_clock::now();
+#endif
 
         // set state
+
+#ifdef BENCHMARK
+        const auto tstart_fk = std::chrono::high_resolution_clock::now();
+#endif
 
         // check dimensions
         if(req.state.name.size()!=req.state.position.size()) {
@@ -152,6 +160,10 @@ public:
 
         robot.updateFrames();
 
+#ifdef BENCHMARK
+        std::cout << "FK duration: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_fk).count() << " s" << std::endl;
+#endif
+
         for(const std::pair<std::string, uint> &kv : robot.link_label_id) {
             res.link_names.push_back(kv.first);
             // transformation from root to link
@@ -165,6 +177,10 @@ public:
         camera_info = req.camera_info;
 
         // render
+
+#ifdef BENCHMARK
+        const auto tstart_render = std::chrono::high_resolution_clock::now();
+#endif
 
         pangolin::View &robot_display = pangolin::Display("robot view")
                 .SetHandler(new pangolin::Handler3D(robot_cam));
@@ -213,6 +229,12 @@ public:
 
         mutex.unlock();
 
+#ifdef BENCHMARK
+        std::cout << "render duration: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_render).count() << " s" << std::endl;
+
+        const auto tstart_read_depth = std::chrono::high_resolution_clock::now();
+#endif
+
         // read depth in OpenGL coordinates
         cv::Mat_<float> depth_gl(h, w);
         glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
@@ -221,7 +243,15 @@ public:
         cv::Mat_<uint8_t> label(h, w);
         glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
 
+#ifdef BENCHMARK
+        std::cout << "depth read duration: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_depth).count() << " s" << std::endl;
+#endif
+
         fbo_buffer.Unbind();
+
+#ifdef BENCHMARK
+        const auto tstart_proj = std::chrono::high_resolution_clock::now();
+#endif
 
         cv::Mat_<cv::Vec3d> points(h, w);
         for(int y(0); y<h; y++) {
@@ -286,6 +316,10 @@ public:
 
 //        cv::merge({px_img, py_img, pz_img}, points);
 
+#ifdef BENCHMARK
+        std::cout << "projection duration: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_proj).count() << " s" << std::endl;
+#endif
+
         // transform 2D pixel coordinates from OpenGL (RUB) to camera frame (RDF)
         // rotate by pi around x-axis
         cv::flip(points, points, 0);
@@ -317,9 +351,9 @@ public:
         cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
         points_img.toImageMsg(res.points);
 
-//        const auto tend = std::chrono::high_resolution_clock::now();
-//        const float duration = std::chrono::duration<float>(tend - tstart).count();
-//        std::cout << "rendering duration: " << duration << " s" << std::endl;
+#ifdef BENCHMARK
+        std::cout << "total duration: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart).count() << " s" << std::endl;
+#endif
 
         return true;
     }
