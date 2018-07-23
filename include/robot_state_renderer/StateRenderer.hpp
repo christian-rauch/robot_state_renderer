@@ -30,12 +30,16 @@ static const std::string LabelFragmentShader = \
 
 class StateRenderer {
 public:
-    StateRenderer(const std::string default_urdf_path = "");
+    StateRenderer(const std::string default_urdf_path = std::string());
 
     ~StateRenderer();
 
+    void run();
+
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
+
+    const std::string window_name = "StateRenderer";
 
     RobotModel robot;
     pangolin::GlSlProgram shader;
