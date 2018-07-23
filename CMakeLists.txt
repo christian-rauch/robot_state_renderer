@@ -121,8 +121,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES robot_state_renderer
+  INCLUDE_DIRS include
+  LIBRARIES state_renderer
   CATKIN_DEPENDS message_runtime geometry_msgs roscpp sensor_msgs urdf
 #  DEPENDS system_lib
 )
@@ -147,6 +147,9 @@ target_link_libraries(meshloader ${assimp_LIBRARIES})
 add_library(robot_model src/RobotModel.cpp src/kdl_parser.cpp)
 target_link_libraries(robot_model meshloader ${Pangolin_LIBRARIES} stdc++fs ${urdfdom_LIBRARIES} ${catkin_LIBRARIES})
 
+add_library(state_renderer src/StateRenderer.cpp)
+target_link_libraries(state_renderer robot_model ${catkin_LIBRARIES})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -168,10 +171,10 @@ add_executable(${PROJECT_NAME}_node src/robot_state_renderer_node.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(${PROJECT_NAME}_node robot_model)
+#target_link_libraries(${PROJECT_NAME}_node
+#  ${catkin_LIBRARIES}
+#)
+target_link_libraries(${PROJECT_NAME}_node state_renderer)
 
 
 #############
@@ -201,6 +204,14 @@ target_link_libraries(${PROJECT_NAME}_node robot_model)
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
+
+install(TARGETS state_renderer
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
+
+install(DIRECTORY include/${PROJECT_NAME}/
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
