@@ -34,7 +34,7 @@ public:
 
     ~StateRenderer();
 
-    void run();
+    void run(const bool visualise = true);
 
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);

@@ -3,7 +3,7 @@
 StateRenderer::StateRenderer(const std::string default_urdf_path) {
     n = std::make_shared<ros::NodeHandle>();
 
-    const std::string urdf_path = ros::param::param<std::string>("~urdf_path", default_urdf_path);
+    const std::string urdf_path = ros::param::param("~urdf_path", default_urdf_path);
     robot.parseURDF(urdf_path);
     robot.loadLinkMeshes();
     robot.loadJointNames();
@@ -24,7 +24,7 @@ StateRenderer::~StateRenderer() {
     pangolin::DestroyWindow(window_name);
 }
 
-void StateRenderer::run() {
+void StateRenderer::run(const bool visualise) {
   pangolin::OpenGlRenderState view_cam(
       pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
       pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
@@ -47,6 +47,7 @@ void StateRenderer::run() {
   ros::Rate r(60);
 
   while(!pangolin::ShouldQuit()) {
+      if(visualise) {
       // visualisation
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -85,6 +86,8 @@ void StateRenderer::run() {
       robot.render(shader, true);
 
       mutex.unlock();
+
+      } // visualise
 
       pangolin::FinishFrame();
 
