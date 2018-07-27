@@ -97,6 +97,7 @@ void StateRenderer::run(const bool visualise) {
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
 
+    const auto tstart = std::chrono::high_resolution_clock::now();
     // set state
 
     // check dimensions
@@ -189,11 +190,15 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     // read depth in OpenGL coordinates
     cv::Mat_<float> depth_gl(h, w);
+    const auto tstart_read_depth = std::chrono::high_resolution_clock::now();
     glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
+    std::cout << "depth read time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_depth).count() << " s" << std::endl;
 
     // read green channel as label
     cv::Mat_<uint8_t> label(h, w);
+    const auto tstart_read_colour = std::chrono::high_resolution_clock::now();
     glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
+    std::cout << "label read time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_colour).count() << " s" << std::endl;
 
     fbo_buffer.Unbind();
 
@@ -236,6 +241,8 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     // points
     cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
     points_img.toImageMsg(res.points);
+
+    std::cout << "total time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart).count() << " s" << std::endl;
 
     return true;
 }
