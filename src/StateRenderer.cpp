@@ -1,4 +1,5 @@
 #include <StateRenderer.hpp>
+#include <thread>
 
 StateRenderer::StateRenderer(const std::string default_urdf_path) {
     n = std::make_shared<ros::NodeHandle>();
@@ -43,8 +44,6 @@ void StateRenderer::run(const bool visualise) {
         .AddDisplay(robot_display);
 
   glEnable(GL_DEPTH_TEST);
-
-  ros::Rate r(60);
 
   while(!pangolin::ShouldQuit()) {
       if(visualise) {
@@ -92,7 +91,7 @@ void StateRenderer::run(const bool visualise) {
       pangolin::FinishFrame();
 
       ros::spinOnce();
-      r.sleep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 }
 
