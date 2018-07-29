@@ -8,6 +8,9 @@
 #include "RobotModel.hpp"
 #include <pangolin/pangolin.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 static const std::string LabelVertexShader = \
         "#version 300 es\n"
@@ -38,7 +41,7 @@ public:
 
     void run(const bool visualise = true);
 
-    bool render(robot_state_renderer::RenderRobotState &srv);
+    bool render(std::shared_ptr<robot_state_renderer::RenderRobotState> &srv);
 
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
@@ -57,6 +60,17 @@ private:
     pangolin::OpenGlRenderState robot_cam;
 
     sensor_msgs::CameraInfo camera_info;
+
+    std::mutex mtx_setup_done;
+    std::condition_variable cv_setup_done;
+
+//    std::atomic<bool> has_request;
+    std::mutex mtx_req;
+    std::condition_variable cond_req;
+
+    std::shared_ptr<robot_state_renderer::RenderRobotState> render_call;
+    std::mutex mtx_res;
+    std::condition_variable cond_res;
 };
 
 #endif // STATERENDERER_HPP
