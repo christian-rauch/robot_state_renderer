@@ -1,6 +1,6 @@
 #include <StateRenderer.hpp>
 
-StateRenderer::StateRenderer(const std::string default_urdf_path) {
+StateRenderer::StateRenderer(const std::string default_urdf_path, const bool provide_service, const bool visualise) {
     n = std::make_shared<ros::NodeHandle>();
 
     const std::string urdf_path = ros::param::param("~urdf_path", default_urdf_path);
@@ -17,7 +17,82 @@ StateRenderer::StateRenderer(const std::string default_urdf_path) {
 
     robot.renderSetup();
 
-    service = n->advertiseService("render", &StateRenderer::render, this);
+    if(provide_service) {
+        service = n->advertiseService("render", &StateRenderer::render, this);
+    }
+
+    // visualisation and offscreen rendering in constructor to avoid issues
+    // with restoring the pangolin context
+
+    pangolin::OpenGlRenderState view_cam(
+        pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
+        pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
+    );
+    pangolin::View &view_display = pangolin::Display("free view")
+            .SetAspect(640.0/480.0)
+            .SetHandler(new pangolin::Handler3D(view_cam));
+
+    pangolin::View &robot_display = pangolin::Display("robot view")
+            .SetHandler(new pangolin::Handler3D(robot_cam));
+
+    pangolin::Display("multi")
+          .SetBounds(0.0, 1.0, 0.0, 1.0)
+          .SetLayout(pangolin::LayoutEqual)
+          .AddDisplay(view_display)
+          .AddDisplay(robot_display);
+
+    glEnable(GL_DEPTH_TEST);
+
+    ros::Rate r(60);
+
+    while(!pangolin::ShouldQuit()) {
+        if(visualise) {
+        // visualisation
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        /// free view
+
+        view_display.Activate(view_cam);
+
+        mutex.lock();
+
+        shader.Bind();
+        shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
+        shader.Unbind();
+
+        pangolin::glDrawAxis(1);    // robot pose in world
+        const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
+        pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
+
+        robot.render(shader, true);
+
+        /// robot view
+
+        const int w = camera_info.width;
+        const int h = camera_info.height;
+
+        robot_display.SetAspect(w/double(h));
+        robot_display.Activate(robot_cam);
+
+        pangolin::glDrawAxis(1);
+        pangolin::glDrawRectPerimeter(-1,-1,1,1);
+        pangolin::glDrawAxis(T_wc, 0.5);
+
+        shader.Bind();
+        shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
+        shader.Unbind();
+
+        robot.render(shader, true);
+
+        mutex.unlock();
+
+        } // visualise
+
+        pangolin::FinishFrame();
+
+        ros::spinOnce();
+        r.sleep();
+    }
 }
 
 StateRenderer::~StateRenderer() {
@@ -94,6 +169,11 @@ void StateRenderer::run(const bool visualise) {
       ros::spinOnce();
       r.sleep();
   }
+}
+
+bool StateRenderer::render(robot_state_renderer::RenderRobotState &srv) {
+    std::cout << "manual call" << std::endl;
+    return render(srv.request, srv.response);
 }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {

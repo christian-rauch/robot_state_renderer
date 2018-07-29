@@ -30,11 +30,15 @@ static const std::string LabelFragmentShader = \
 
 class StateRenderer {
 public:
-    StateRenderer(const std::string default_urdf_path = std::string());
+    StateRenderer(const std::string default_urdf_path = std::string(),
+                  const bool provide_service = true,
+                  const bool visualise = true);
 
     ~StateRenderer();
 
     void run(const bool visualise = true);
+
+    bool render(robot_state_renderer::RenderRobotState &srv);
 
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
