@@ -34,7 +34,15 @@ public:
 
     ~StateRenderer();
 
-    void run(const bool visualise = true);
+    /**
+     * @brief visualise visualise the requested state
+     */
+    void visualise();
+
+    /**
+     * @brief spin run the ROS event loop without visualisation
+     */
+    void spin();
 
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);

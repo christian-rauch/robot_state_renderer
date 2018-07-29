@@ -11,6 +11,9 @@ StateRenderer::StateRenderer(const std::string default_urdf_path) {
     robot.generateMeshColours(false, true);
 
     pangolin::CreateWindowAndBind(window_name, 640, 480);
+    glEnable(GL_DEPTH_TEST);
+    // draw a empty (black) frame
+    pangolin::FinishFrame();
 
     shader.AddShader(pangolin::GlSlVertexShader, LabelVertexShader);
     shader.AddShader(pangolin::GlSlFragmentShader, LabelFragmentShader);
@@ -25,7 +28,7 @@ StateRenderer::~StateRenderer() {
     pangolin::DestroyWindow(window_name);
 }
 
-void StateRenderer::run(const bool visualise) {
+void StateRenderer::visualise() {
   pangolin::OpenGlRenderState view_cam(
       pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
       pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
@@ -43,10 +46,7 @@ void StateRenderer::run(const bool visualise) {
         .AddDisplay(view_display)
         .AddDisplay(robot_display);
 
-  glEnable(GL_DEPTH_TEST);
-
   while(!pangolin::ShouldQuit()) {
-      if(visualise) {
       // visualisation
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -86,12 +86,17 @@ void StateRenderer::run(const bool visualise) {
 
       mutex.unlock();
 
-      } // visualise
-
       pangolin::FinishFrame();
 
       ros::spinOnce();
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+}
+
+void StateRenderer::spin() {
+  while(!pangolin::ShouldQuit() && ros::ok()) {
+      ros::spinOnce();
+      pangolin::FinishFrame();
   }
 }
 
