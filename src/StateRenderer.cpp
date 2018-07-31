@@ -188,16 +188,37 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     mutex.unlock();
 
+    GLuint query;
+    glGenQueries(1, &query);
+    glQueryCounter(query, GL_TIMESTAMP);
+    int done;
+
+    GLint64 tgl_start, tgl_end;
+
     // read depth in OpenGL coordinates
     cv::Mat_<float> depth_gl(h, w);
     const auto tstart_read_depth = std::chrono::high_resolution_clock::now();
+    glGetInteger64v(GL_TIMESTAMP, &tgl_start);
     glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
+    done = 0;
+    while (!done) {
+        glGetQueryObjectiv(query, GL_QUERY_RESULT_AVAILABLE, &done);
+    }
+    glGetInteger64v(GL_TIMESTAMP, &tgl_end);
+    std::cout << "gl depth read time: " << (tgl_end- tgl_start)/float(1e6) << " ms" << std::endl;
     std::cout << "depth read time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_depth).count() << " s" << std::endl;
 
     // read green channel as label
     cv::Mat_<uint8_t> label(h, w);
     const auto tstart_read_colour = std::chrono::high_resolution_clock::now();
+    glGetInteger64v(GL_TIMESTAMP, &tgl_start);
     glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
+    done = 0;
+    while (!done) {
+        glGetQueryObjectiv(query, GL_QUERY_RESULT_AVAILABLE, &done);
+    }
+    glGetInteger64v(GL_TIMESTAMP, &tgl_end);
+    std::cout << "gl label read time: " << (tgl_end- tgl_start)/float(1e6) << " ms" << std::endl;
     std::cout << "label read time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_colour).count() << " s" << std::endl;
 
     fbo_buffer.Unbind();
