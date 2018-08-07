@@ -1,6 +1,8 @@
 #include <StateRenderer.hpp>
 #include <thread>
 
+#define WINDOW_NAME "StateRenderer"
+
 StateRenderer::StateRenderer(const std::string default_urdf_path) {
     n = std::make_shared<ros::NodeHandle>();
 
@@ -10,7 +12,7 @@ StateRenderer::StateRenderer(const std::string default_urdf_path) {
     robot.loadJointNames();
     robot.generateMeshColours(false, true);
 
-    pangolin::CreateWindowAndBind(window_name, 640, 480);
+    pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 480);
     glEnable(GL_DEPTH_TEST);
     // draw a empty (black) frame
     pangolin::FinishFrame();
@@ -22,13 +24,19 @@ StateRenderer::StateRenderer(const std::string default_urdf_path) {
     robot.renderSetup();
 
     service = n->advertiseService("render", &StateRenderer::render, this);
+
+    pangolin::GetBoundWindow()->RemoveCurrent();
 }
 
 StateRenderer::~StateRenderer() {
-    pangolin::DestroyWindow(window_name);
+    pangolin::GetBoundWindow()->RemoveCurrent();
+    pangolin::DestroyWindow(WINDOW_NAME);
+    pangolin::QuitAll();
 }
 
 void StateRenderer::visualise() {
+  pangolin::BindToContext(WINDOW_NAME);
+
   pangolin::OpenGlRenderState view_cam(
       pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
       pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
@@ -91,16 +99,22 @@ void StateRenderer::visualise() {
       ros::spinOnce();
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
+
+  pangolin::GetBoundWindow()->RemoveCurrent();
 }
 
 void StateRenderer::spin() {
+  pangolin::BindToContext(WINDOW_NAME);
   while(!pangolin::ShouldQuit() && ros::ok()) {
       ros::spinOnce();
       pangolin::FinishFrame();
   }
+  pangolin::GetBoundWindow()->RemoveCurrent();
 }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
+
+    pangolin::BindToContext(WINDOW_NAME);
 
     // set state
 
@@ -241,6 +255,8 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     // points
     cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
     points_img.toImageMsg(res.points);
+
+    pangolin::GetBoundWindow()->RemoveCurrent();
 
     return true;
 }

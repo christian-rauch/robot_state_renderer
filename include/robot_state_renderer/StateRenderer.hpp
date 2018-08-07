@@ -47,7 +47,6 @@ public:
 private:
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
 
-    const std::string window_name = "StateRenderer";
 
     RobotModel robot;
     pangolin::GlSlProgram shader;
