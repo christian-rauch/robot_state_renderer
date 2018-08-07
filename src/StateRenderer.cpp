@@ -41,7 +41,7 @@ StateRenderer::~StateRenderer() {
     pangolin::QuitAll();
 }
 
-void StateRenderer::visualise() {
+void StateRenderer::visualise(const uint period_ms) {
     if(!is_setup) {
         mutex.lock();
         pangolin::BindToContext(WINDOW_NAME);
@@ -111,7 +111,7 @@ void StateRenderer::visualise() {
         mutex.unlock();
 
         ros::spinOnce();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(period_ms));
     }
 }
 

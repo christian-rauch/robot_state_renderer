@@ -36,8 +36,9 @@ public:
 
     /**
      * @brief visualise visualise the requested state
+     * @param period_ms delay (in milliseconds) between visualisation, small values will decrease the offscreen rendering speed
      */
-    void visualise();
+    void visualise(const uint period_ms = 10);
 
     /**
      * @brief spin run the ROS event loop without visualisation
