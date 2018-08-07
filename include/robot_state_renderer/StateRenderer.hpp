@@ -34,10 +34,12 @@ public:
 
     ~StateRenderer();
 
+    StateRenderer& visualise_setup();
+
     /**
      * @brief visualise visualise the requested state
      */
-    void visualise();
+    void visualise_loop();
 
     /**
      * @brief spin run the ROS event loop without visualisation
@@ -59,6 +61,8 @@ private:
     pangolin::OpenGlRenderState robot_cam;
 
     sensor_msgs::CameraInfo camera_info;
+
+    pangolin::OpenGlRenderState view_cam;
 };
 
 #endif // STATERENDERER_HPP
