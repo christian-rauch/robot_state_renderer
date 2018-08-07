@@ -40,6 +40,7 @@ StateRenderer::~StateRenderer() {
 }
 
 void StateRenderer::visualise() {
+  mutex.lock();
   pangolin::BindToContext(WINDOW_NAME);
 
   pangolin::OpenGlRenderState view_cam(
@@ -59,15 +60,19 @@ void StateRenderer::visualise() {
         .AddDisplay(view_display)
         .AddDisplay(robot_display);
 
+  pangolin::GetBoundWindow()->RemoveCurrent();
+  mutex.unlock();
+
   while(!pangolin::ShouldQuit()) {
+      mutex.lock();
+      pangolin::BindToContext(WINDOW_NAME);
+
       // visualisation
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       /// free view
 
       view_display.Activate(view_cam);
-
-      mutex.lock();
 
       shader.Bind();
       shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
@@ -97,29 +102,30 @@ void StateRenderer::visualise() {
 
       robot.render(shader, true);
 
-      mutex.unlock();
-
       pangolin::FinishFrame();
+
+      pangolin::GetBoundWindow()->RemoveCurrent();
+      mutex.unlock();
 
       ros::spinOnce();
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-
-  pangolin::GetBoundWindow()->RemoveCurrent();
 }
 
 void StateRenderer::spin() {
   pangolin::BindToContext(WINDOW_NAME);
   while(!pangolin::ShouldQuit() && ros::ok()) {
       ros::spinOnce();
+      mutex.lock();
+      pangolin::BindToContext(WINDOW_NAME);
       pangolin::FinishFrame();
+      pangolin::GetBoundWindow()->RemoveCurrent();
+      mutex.unlock();
   }
   pangolin::GetBoundWindow()->RemoveCurrent();
 }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
-
-    pangolin::BindToContext(WINDOW_NAME);
 
     // set state
 
@@ -137,6 +143,7 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     tf::poseMsgToEigen(req.robot_pose, robot_pose);
 
     mutex.lock();
+    pangolin::BindToContext(WINDOW_NAME);
 
     const pangolin::OpenGlMatrix T_wc(cam_pose.matrix());
     robot.T_wr = pangolin::OpenGlMatrix(robot_pose.matrix());
@@ -209,8 +216,6 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     glFlush();
 
-    mutex.unlock();
-
     // read depth in OpenGL coordinates
     cv::Mat_<float> depth_gl(h, w);
     glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
@@ -220,6 +225,9 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
 
     fbo_buffer.Unbind();
+
+    pangolin::GetBoundWindow()->RemoveCurrent();
+    mutex.unlock();
 
     cv::Mat_<cv::Vec3d> points(h, w);
     for(int y(0); y<h; y++) {
@@ -260,8 +268,6 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     // points
     cv_bridge::CvImage points_img(req.camera_info.header, "64FC3", points);
     points_img.toImageMsg(res.points);
-
-    pangolin::GetBoundWindow()->RemoveCurrent();
 
     return true;
 }
