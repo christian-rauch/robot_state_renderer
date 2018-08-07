@@ -3,8 +3,11 @@
 
 #define WINDOW_NAME "StateRenderer"
 
-StateRenderer::StateRenderer(const std::string default_urdf_path) {
-    n = std::make_shared<ros::NodeHandle>();
+StateRenderer::StateRenderer(const std::string default_urdf_path, const bool advertise_service) {
+
+    if(advertise_service) {
+        n = std::make_shared<ros::NodeHandle>();
+    }
 
     const std::string urdf_path = ros::param::param("~urdf_path", default_urdf_path);
     robot.parseURDF(urdf_path);
@@ -23,7 +26,9 @@ StateRenderer::StateRenderer(const std::string default_urdf_path) {
 
     robot.renderSetup();
 
-    service = n->advertiseService("render", &StateRenderer::render, this);
+    if(advertise_service) {
+        service = n->advertiseService("render", &StateRenderer::render, this);
+    }
 
     pangolin::GetBoundWindow()->RemoveCurrent();
 }
