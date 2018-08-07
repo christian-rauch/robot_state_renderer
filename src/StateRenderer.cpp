@@ -2,6 +2,8 @@
 #include <thread>
 
 #define WINDOW_NAME "StateRenderer"
+#define DISP_FREE_VIS "free_view_vis"
+#define DISP_ROBO_VIS "robot_view_vis"
 
 StateRenderer::StateRenderer(const std::string default_urdf_path, const bool advertise_service) {
 
@@ -15,7 +17,7 @@ StateRenderer::StateRenderer(const std::string default_urdf_path, const bool adv
     robot.loadJointNames();
     robot.generateMeshColours(false, true);
 
-    pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 480);
+    pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 240);
     glEnable(GL_DEPTH_TEST);
     // draw a empty (black) frame
     pangolin::FinishFrame();
@@ -40,76 +42,77 @@ StateRenderer::~StateRenderer() {
 }
 
 void StateRenderer::visualise() {
-  mutex.lock();
-  pangolin::BindToContext(WINDOW_NAME);
+    if(!is_setup) {
+        mutex.lock();
+        pangolin::BindToContext(WINDOW_NAME);
 
-  pangolin::OpenGlRenderState view_cam(
-      pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
-      pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
-  );
-  pangolin::View &view_display = pangolin::Display("free view")
-          .SetAspect(640.0/480.0)
-          .SetHandler(new pangolin::Handler3D(view_cam));
+        view_cam = pangolin::OpenGlRenderState(
+            pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
+            pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
+        );
 
-  pangolin::View &robot_display = pangolin::Display("robot view")
-          .SetHandler(new pangolin::Handler3D(robot_cam));
+        pangolin::Display(DISP_FREE_VIS)
+                .SetAspect(640.0/480.0)
+                .SetHandler(new pangolin::Handler3D(view_cam));
 
-  pangolin::Display("multi")
-        .SetBounds(0.0, 1.0, 0.0, 1.0)
-        .SetLayout(pangolin::LayoutEqual)
-        .AddDisplay(view_display)
-        .AddDisplay(robot_display);
+        pangolin::Display("dual")
+              .SetBounds(0.0, 1.0, 0.0, 1.0)
+              .SetLayout(pangolin::LayoutEqual)
+              .AddDisplay(pangolin::Display(DISP_FREE_VIS))
+              .AddDisplay(pangolin::Display(DISP_ROBO_VIS));
 
-  pangolin::GetBoundWindow()->RemoveCurrent();
-  mutex.unlock();
+        pangolin::GetBoundWindow()->RemoveCurrent();
+        mutex.unlock();
+        is_setup = true;
+    }
 
-  while(!pangolin::ShouldQuit()) {
-      mutex.lock();
-      pangolin::BindToContext(WINDOW_NAME);
+    while(!pangolin::ShouldQuit()) {
+        mutex.lock();
+        pangolin::BindToContext(WINDOW_NAME);
 
-      // visualisation
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // visualisation
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      /// free view
+        /// free view
 
-      view_display.Activate(view_cam);
+        pangolin::Display(DISP_FREE_VIS).Activate(view_cam);
 
-      shader.Bind();
-      shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
-      shader.Unbind();
+        shader.Bind();
+        shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
+        shader.Unbind();
 
-      pangolin::glDrawAxis(1);    // robot pose in world
-      const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
-      pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
+        pangolin::glDrawAxis(1);    // robot pose in world
+        const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
+        pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
 
-      robot.render(shader, true);
+        robot.render(shader, true);
 
-      /// robot view
+        /// robot view
 
-      const int w = camera_info.width;
-      const int h = camera_info.height;
+        const int w = camera_info.width;
+        const int h = camera_info.height;
 
-      robot_display.SetAspect(w/double(h));
-      robot_display.Activate(robot_cam);
+        pangolin::Display(DISP_ROBO_VIS).SetAspect(w/double(h));
+        pangolin::Display(DISP_ROBO_VIS).Activate(robot_cam);
 
-      pangolin::glDrawAxis(1);
-      pangolin::glDrawRectPerimeter(-1,-1,1,1);
-      pangolin::glDrawAxis(T_wc, 0.5);
+        pangolin::glDrawAxis(1);
+        pangolin::glDrawRectPerimeter(-1,-1,1,1);
+        pangolin::glDrawAxis(T_wc, 0.5);
 
-      shader.Bind();
-      shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
-      shader.Unbind();
+        shader.Bind();
+        shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
+        shader.Unbind();
 
-      robot.render(shader, true);
+        robot.render(shader, true);
 
-      pangolin::FinishFrame();
+        pangolin::FinishFrame();
 
-      pangolin::GetBoundWindow()->RemoveCurrent();
-      mutex.unlock();
+        pangolin::GetBoundWindow()->RemoveCurrent();
+        mutex.unlock();
 
-      ros::spinOnce();
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
+        ros::spinOnce();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 }
 
 void StateRenderer::spin() {
@@ -171,9 +174,6 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     // render
 
-    pangolin::View &robot_display = pangolin::Display("robot view")
-            .SetHandler(new pangolin::Handler3D(robot_cam));
-
     const int w = int(camera_info.width);
     const int h = int(camera_info.height);
     const double fu = camera_info.K[0];
@@ -196,7 +196,6 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
         w, h, fu, fv, cx, cy, z_near, z_far));
     robot_cam.SetModelViewMatrix(T_wc.Inverse());
 
-    robot_display.SetAspect(w/double(h));
     pangolin::Viewport offscreen_view(0,0,w,h);
 
     color_buffer.Reinitialise(w,h);

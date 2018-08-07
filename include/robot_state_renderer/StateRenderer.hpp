@@ -59,6 +59,10 @@ private:
     pangolin::OpenGlRenderState robot_cam;
 
     sensor_msgs::CameraInfo camera_info;
+
+    pangolin::OpenGlRenderState view_cam;
+
+    bool is_setup = false;
 };
 
 #endif // STATERENDERER_HPP
