@@ -36,7 +36,9 @@ StateRenderer::StateRenderer(const std::string default_urdf_path, const bool adv
 }
 
 StateRenderer::~StateRenderer() {
-    pangolin::GetBoundWindow()->RemoveCurrent();
+    if(pangolin::GetBoundWindow()) {
+        pangolin::GetBoundWindow()->RemoveCurrent();
+    }
     pangolin::DestroyWindow(WINDOW_NAME);
     pangolin::QuitAll();
 }
