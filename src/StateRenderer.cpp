@@ -53,9 +53,11 @@ void StateRenderer::visualise(const uint period_ms) {
             pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
         );
 
+        view_cam_handler = std::make_unique<pangolin::Handler3D>(view_cam);
+
         pangolin::Display(DISP_FREE_VIS)
                 .SetAspect(640.0/480.0)
-                .SetHandler(new pangolin::Handler3D(view_cam));
+                .SetHandler(view_cam_handler.get());
 
         pangolin::Display("dual")
               .SetBounds(0.0, 1.0, 0.0, 1.0)
@@ -200,8 +202,13 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     pangolin::Viewport offscreen_view(0,0,w,h);
 
-    color_buffer.Reinitialise(w,h);
-    depth_buffer.Reinitialise(w,h);
+    // assume constant image dimensions over runtime
+    if(color_buffer.tid==0) {
+        color_buffer.Reinitialise(w,h);
+    }
+    if(depth_buffer.rbid==0) {
+        depth_buffer.Reinitialise(w,h);
+    }
     pangolin::GlFramebuffer fbo_buffer(color_buffer, depth_buffer);
 
     fbo_buffer.Bind();
@@ -218,12 +225,12 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     glFlush();
 
     // read depth in OpenGL coordinates
-    cv::Mat_<float> depth_gl(h, w);
+    depth_gl = cv::Mat_<float>(h, w);
     glReadPixels(0, 0, w, h, GL_DEPTH_COMPONENT, GL_FLOAT, depth_gl.data);
 
     // read green channel as label
-    cv::Mat_<uint8_t> label(h, w);
-    glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
+    label = cv::Mat_<uint8_t>(h, w);
+    color_buffer.Download(label.data, GL_GREEN, GL_UNSIGNED_BYTE);
 
     fbo_buffer.Unbind();
 

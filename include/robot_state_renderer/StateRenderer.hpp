@@ -57,11 +57,16 @@ private:
     pangolin::GlTexture color_buffer;
     pangolin::GlRenderBuffer depth_buffer;
 
+    cv::Mat_<float> depth_gl;
+    cv::Mat_<uint8_t> label;
+
     pangolin::OpenGlRenderState robot_cam;
 
     sensor_msgs::CameraInfo camera_info;
 
     pangolin::OpenGlRenderState view_cam;
+
+    std::unique_ptr<pangolin::Handler3D> view_cam_handler = nullptr;
 
     bool is_setup = false;
 };

@@ -42,6 +42,7 @@ std::string getROSPackagePath(const std::string &start_path,
 
 RobotModel::RobotModel(const std::string &urdf_path) {
     parseURDF(urdf_path);
+    T_wr.SetIdentity();
 }
 
 void RobotModel::parseURDF(const std::string &urdf_path) {
@@ -129,9 +130,7 @@ void RobotModel::updateFrames() {
 
         const KDL::Frame link_pose = getFramePose(link_name);
         frame_poses[link_name] = camera_pose.Inverse()*link_pose;
-
-        const pangolin::OpenGlMatrix M = MatrixFromFrame(link_pose);
-        frame_poses_gl[link_name] = M;
+        frame_poses_gl[link_name] = MatrixFromFrame(link_pose);
     }
 }
 
@@ -265,7 +264,11 @@ void RobotModel::render(pangolin::GlSlProgram &shader, const bool link_colour, s
         if(skipMeshes.count(link_name))
             continue;
 
-        const pangolin::OpenGlMatrix M = frame_poses_gl[link_name];
+        // skip frames without transformation
+        if(!frame_poses_gl.count(link_name))
+            continue;
+
+        const pangolin::OpenGlMatrix M = frame_poses_gl.at(link_name);
 
         // apply frame transformation to shader
         shader.Bind();
