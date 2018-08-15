@@ -120,16 +120,14 @@ void StateRenderer::visualise(const uint period_ms) {
 }
 
 void StateRenderer::spin() {
-  pangolin::BindToContext(WINDOW_NAME);
-  while(!pangolin::ShouldQuit() && ros::ok()) {
-      ros::spinOnce();
-      mutex.lock();
-      pangolin::BindToContext(WINDOW_NAME);
-      pangolin::FinishFrame();
-      pangolin::GetBoundWindow()->RemoveCurrent();
-      mutex.unlock();
-  }
-  pangolin::GetBoundWindow()->RemoveCurrent();
+    while(!pangolin::ShouldQuit() && ros::ok()) {
+        ros::spinOnce();
+        mutex.lock();
+        pangolin::BindToContext(WINDOW_NAME);
+        pangolin::FinishFrame();
+        pangolin::GetBoundWindow()->RemoveCurrent();
+        mutex.unlock();
+    }
 }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
