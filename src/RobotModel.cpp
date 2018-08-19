@@ -107,6 +107,9 @@ void RobotModel::loadLinkMeshes() {
                 link_colours[l->name].b = colour.b;
                 link_colours[l->name].a = colour.a;
             }
+
+            const urdf::Pose pose = l->visual->origin;
+            frame_origins[l->name] = KDL::Frame(KDL::Rotation::Quaternion(pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w), KDL::Vector(pose.position.x, pose.position.y, pose.position.z));
         }
     }
 }
@@ -130,7 +133,7 @@ void RobotModel::updateFrames() {
 
         const KDL::Frame link_pose = getFramePose(link_name);
         frame_poses[link_name] = camera_pose.Inverse()*link_pose;
-        frame_poses_gl[link_name] = MatrixFromFrame(link_pose);
+        frame_poses_gl[link_name] = link_pose;
     }
 }
 
@@ -268,7 +271,7 @@ void RobotModel::render(pangolin::GlSlProgram &shader, const bool link_colour, s
         if(!frame_poses_gl.count(link_name))
             continue;
 
-        const pangolin::OpenGlMatrix M = frame_poses_gl.at(link_name);
+        const pangolin::OpenGlMatrix M = MatrixFromFrame(frame_poses_gl.at(link_name)*frame_origins.at(link_name));
 
         // apply frame transformation to shader
         shader.Bind();

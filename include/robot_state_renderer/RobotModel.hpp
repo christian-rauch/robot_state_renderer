@@ -27,11 +27,13 @@ private:
 
     // link poses in world (OpenGL) frame
     // this stores poses of all links, not only those with mesh
-    std::map<std::string, pangolin::OpenGlMatrix> frame_poses_gl;
+    std::map<std::string, KDL::Frame> frame_poses_gl;
 
     // link poses in camera frame
     // this stores poses of all links, not only those with mesh
     std::map<std::string, KDL::Frame> frame_poses;
+
+    std::map<std::string, KDL::Frame> frame_origins;
 
 public:
     RobotModel() { }
