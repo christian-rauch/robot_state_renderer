@@ -33,7 +33,7 @@ private:
     // this stores poses of all links, not only those with mesh
     std::map<std::string, KDL::Frame> frame_poses;
 
-    std::map<std::string, KDL::Frame> frame_origins;
+    std::map<std::string, std::vector<KDL::Frame>> visual_origins;
 
 public:
     RobotModel() { }
@@ -95,7 +95,7 @@ public:
         return root_frame;
     }
 
-    std::map<std::string, MeshPtr> link_meshes;
+    std::map<std::string, std::vector<MeshPtr>> link_meshes;
 
     std::map<std::string, pangolin::Colour> link_label_colours;
 
@@ -104,7 +104,7 @@ public:
     std::map<std::string, pangolin::Colour> link_label_colours_rgb;
 
     // original link colour as given by the URDF
-    std::map<std::string, pangolin::Colour> link_colours;
+    std::map<std::string, std::vector<pangolin::Colour>> link_colours;
 
     std::map<std::string, uint> link_label_id;
 

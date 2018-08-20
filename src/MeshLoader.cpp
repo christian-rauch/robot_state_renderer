@@ -121,9 +121,9 @@ MeshPtr getMesh(const std::string &path) {
     //std::cout<<"material?: "<<scene->HasMaterials()<<std::endl;
     //std::cout<<"texture?: "<<scene->HasTextures()<<std::endl;
 
-    if(scene->mNumMaterials>1) {
-        std::cerr<<"more than 1 material is currently not supported!"<<std::endl;
-    }
+//    if(scene->mNumMaterials>1) {
+//        std::cerr<<"more than 1 material is currently not supported!"<<std::endl;
+//    }
 
     std::vector<aiMatrix4x4> transforms;
 
@@ -137,7 +137,7 @@ MeshPtr getMesh(const std::string &path) {
 //    memcpy(mesh.normals.data(), normals.data(), vec_byte_size(normals));
 //    memcpy(mesh.faces.data(), faces.data(), vec_byte_size(faces));
 
-    const uint nMeshes = scene->mNumMeshes;
+//    const uint nMeshes = scene->mNumMeshes;
 
     //std::cout<<"meshes: "<<nMeshes<<std::endl;
 

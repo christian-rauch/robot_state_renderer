@@ -69,10 +69,10 @@ void RobotModel::loadLinkMeshes() {
 
     // load mesh for each link
     for(boost::shared_ptr<urdf::Link> l : links) {
-        if(l->visual!=NULL) {
-            //
-            if(l->visual->geometry->type==urdf::Geometry::MESH) {
-                std::string mesh_path = dynamic_cast<urdf::Mesh*>(&*l->visual->geometry)->filename;
+        for(size_t i=0; i<l->visual_array.size(); i++) {
+            const auto & vis = l->visual_array[i];
+            if(vis->geometry->type==urdf::Geometry::MESH) {
+                std::string mesh_path = dynamic_cast<urdf::Mesh*>(&*vis->geometry)->filename;
 
                 if(mesh_path.find(PACKAGE_PATH_URI_SCHEME) != std::string::npos) {
                     // given as ROS package url
@@ -97,19 +97,18 @@ void RobotModel::loadLinkMeshes() {
                     mesh_path = mesh_package_path + mesh_path;
                 }
 
-                link_meshes[l->name] = MeshLoader::getMesh(mesh_path);
+                link_meshes[l->name].push_back(MeshLoader::getMesh(mesh_path));
             }
 
-            if(l->visual->material!=NULL){
-                const urdf::Color colour = l->visual->material->color;
-                link_colours[l->name].r = colour.r;
-                link_colours[l->name].g = colour.g;
-                link_colours[l->name].b = colour.b;
-                link_colours[l->name].a = colour.a;
+            if(vis->material!=NULL){
+                // workaround: only the colour of the first visual is recognised
+                // apply the first visual's colours to all visuals
+                const urdf::Color colour = l->visual_array[0]->material->color;
+                link_colours[l->name].emplace_back(colour.r, colour.g, colour.b, colour.a);
             }
 
-            const urdf::Pose pose = l->visual->origin;
-            frame_origins[l->name] = KDL::Frame(KDL::Rotation::Quaternion(pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w), KDL::Vector(pose.position.x, pose.position.y, pose.position.z));
+            const urdf::Pose pose = vis->origin;
+            visual_origins[l->name].push_back(KDL::Frame(KDL::Rotation::Quaternion(pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w), KDL::Vector(pose.position.x, pose.position.y, pose.position.z)));
         }
     }
 }
@@ -139,7 +138,9 @@ void RobotModel::updateFrames() {
 
 void RobotModel::renderSetup() {
     for(auto it = link_meshes.begin(); it!=link_meshes.end(); it++) {
-        it->second->renderSetup();
+        for(auto & m : it->second) {
+            m->renderSetup();
+        }
     }
 }
 
@@ -271,36 +272,44 @@ void RobotModel::render(pangolin::GlSlProgram &shader, const bool link_colour, s
         if(!frame_poses_gl.count(link_name))
             continue;
 
-        const pangolin::OpenGlMatrix M = MatrixFromFrame(frame_poses_gl.at(link_name)*frame_origins.at(link_name));
+        for(size_t imesh=0; imesh<it->second.size(); imesh++) {
+          const pangolin::OpenGlMatrix M = MatrixFromFrame(frame_poses_gl.at(link_name)*visual_origins.at(link_name)[imesh]);
 
-        // apply frame transformation to shader
-        shader.Bind();
-        shader.SetUniform("M", T_wr*M);
-        if(link_colour) {
-            shader.SetUniform("label_colour", link_colours[it->first]);
-        }
-        else {
-            if(!link_label_colours.empty()) {
-                shader.SetUniform("label_colour", link_label_colours[it->first]);
-            }
-            else {
-                throw std::runtime_error("requested to render label colours, but none are given");
-            }
-        }
-        shader.Unbind();
+          // apply frame transformation to shader
+          shader.Bind();
+          shader.SetUniform("M", T_wr*M);
+          if(link_colour) {
+              if(link_meshes[it->first][imesh]->hasColour()) {
+                  const auto c = link_meshes[it->first][imesh]->colour[0];
+                  shader.SetUniform("label_colour", pangolin::Colour(c[0], c[1], c[2]));
+              }
+              else {
+                  shader.SetUniform("label_colour", link_colours[it->first][imesh]);
+              }
+          }
+          else {
+              if(!link_label_colours.empty()) {
+                  shader.SetUniform("label_colour", link_label_colours[it->first]);
+              }
+              else {
+                  throw std::runtime_error("requested to render label colours, but none are given");
+              }
+          }
+          shader.Unbind();
 
-        it->second->render(shader);
+          (it->second)[imesh]->render(shader);
 
-        if(mesh_masks!=NULL) {
-            // render and export each link individually
-            glFlush();
+          if(mesh_masks!=NULL) {
+              // render and export each link individually
+              glFlush();
 
-            (*mesh_masks)[link_name].Alloc(w, h, w);
-            glReadBuffer(GL_BACK);
-            glPixelStorei(GL_PACK_ALIGNMENT, 1);
-            glReadPixels(0,0,w,h, GL_ALPHA, GL_UNSIGNED_BYTE, (*mesh_masks)[link_name].ptr );
+              (*mesh_masks)[link_name].Alloc(w, h, w);
+              glReadBuffer(GL_BACK);
+              glPixelStorei(GL_PACK_ALIGNMENT, 1);
+              glReadPixels(0,0,w,h, GL_ALPHA, GL_UNSIGNED_BYTE, (*mesh_masks)[link_name].ptr );
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        }
+              glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+          }
+        } // imesh
     }
 }
