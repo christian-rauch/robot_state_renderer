@@ -235,7 +235,7 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     pangolin::GetBoundWindow()->RemoveCurrent();
     mutex.unlock();
 
-    cv::Mat_<cv::Vec3d> points(h, w);
+    cv::Mat_<cv::Vec3d> points(h, w, cv::Vec3d(0,0,0));
     for(int y(0); y<h; y++) {
         for(int x(0); x<w; x++) {
             if(depth_gl(y,x)<1.0f) {
