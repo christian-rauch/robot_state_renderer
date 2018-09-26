@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   eigen_conversions
   roslib
+  kdl_parser
 )
 
 ## System dependencies are found with CMake's conventions
@@ -144,7 +145,7 @@ include_directories(
 # )
 add_library(meshloader src/MeshLoader.cpp src/Mesh.cpp)
 target_link_libraries(meshloader ${assimp_LIBRARIES})
-add_library(robot_model src/RobotModel.cpp src/kdl_parser.cpp)
+add_library(robot_model src/RobotModel.cpp)
 target_link_libraries(robot_model meshloader ${Pangolin_LIBRARIES} stdc++fs ${urdfdom_LIBRARIES} ${catkin_LIBRARIES})
 
 add_library(state_renderer src/StateRenderer.cpp)

@@ -11,7 +11,7 @@
 #include "Mesh.hpp"
 #include "MeshLoader.hpp"
 
-typedef boost::shared_ptr<urdf::ModelInterface> ModelInterfacePrt;
+typedef std::shared_ptr<urdf::ModelInterface> ModelInterfacePrt;
 
 class RobotModel {
 private:

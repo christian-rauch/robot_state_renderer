@@ -1,7 +1,7 @@
 #include "RobotModel.hpp"
 
 #include <urdf_parser/urdf_parser.h>
-#include <kdl_parser.hpp>
+#include <kdl_parser/kdl_parser.hpp>
 
 #include <experimental/filesystem>
 
@@ -64,11 +64,11 @@ void RobotModel::loadLinkMeshes() {
     // get root frame
     root_frame = urdf_model->getRoot()->name;
 
-    std::vector<boost::shared_ptr<urdf::Link>> links;
+    std::vector<std::shared_ptr<urdf::Link>> links;
     urdf_model->getLinks(links);
 
     // load mesh for each link
-    for(boost::shared_ptr<urdf::Link> l : links) {
+    for(std::shared_ptr<urdf::Link> l : links) {
         for(size_t i=0; i<l->visual_array.size(); i++) {
             const auto & vis = l->visual_array[i];
             if(vis->geometry->type==urdf::Geometry::MESH) {
@@ -89,7 +89,8 @@ void RobotModel::loadLinkMeshes() {
                     }
                     else {
                         // manually replace ROS package path
-                        boost::algorithm::replace_first(mesh_path, PACKAGE_PATH_URI_SCHEME, mesh_package_path);
+                        const size_t pos = mesh_path.find(PACKAGE_PATH_URI_SCHEME);
+                        mesh_path.replace(pos, std::string(PACKAGE_PATH_URI_SCHEME).length(), mesh_package_path);
                     }
                 }
                 else {
