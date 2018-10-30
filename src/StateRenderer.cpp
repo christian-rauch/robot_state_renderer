@@ -333,7 +333,15 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     // read green channel as label
     label = cv::Mat_<uint8_t>(h, w);
-    color_buffer.Download(label.data, GL_GREEN, GL_UNSIGNED_BYTE);
+    glGetInteger64v(GL_TIMESTAMP, &tgl_start);
+//    color_buffer.Download(label.data, GL_GREEN, GL_UNSIGNED_BYTE);
+    glReadPixels(0, 0, w, h, GL_GREEN, GL_UNSIGNED_BYTE, label.data);
+    done = 0;
+    while (!done) {
+      glGetQueryObjectiv(query, GL_QUERY_RESULT_AVAILABLE, &done);
+    }
+    glGetInteger64v(GL_TIMESTAMP, &tgl_end);
+    std::cout << "colour read time: " << std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - tstart_read_depth).count() << " s" << std::endl;
 
     fbo_buffer.Unbind();
 
