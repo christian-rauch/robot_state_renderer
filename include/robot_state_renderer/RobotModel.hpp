@@ -2,6 +2,7 @@
 #define ROBOTMODEL_HPP
 
 #include <urdf_model/model.h>
+#include <urdf_world/types.h>
 #include <kdl/tree.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jntarray.hpp>
@@ -11,11 +12,9 @@
 #include "Mesh.hpp"
 #include "MeshLoader.hpp"
 
-typedef std::shared_ptr<urdf::ModelInterface> ModelInterfacePrt;
-
 class RobotModel {
 private:
-    ModelInterfacePrt urdf_model;
+    urdf::ModelInterfaceSharedPtr urdf_model;
 
     KDL::Tree robot_tree;
 

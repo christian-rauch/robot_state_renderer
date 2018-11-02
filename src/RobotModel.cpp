@@ -64,11 +64,11 @@ void RobotModel::loadLinkMeshes() {
     // get root frame
     root_frame = urdf_model->getRoot()->name;
 
-    std::vector<std::shared_ptr<urdf::Link>> links;
+    std::vector<urdf::LinkSharedPtr> links;
     urdf_model->getLinks(links);
 
     // load mesh for each link
-    for(std::shared_ptr<urdf::Link> l : links) {
+    for(const urdf::LinkSharedPtr & l : links) {
         for(size_t i=0; i<l->visual_array.size(); i++) {
             const auto & vis = l->visual_array[i];
             if(vis->geometry->type==urdf::Geometry::MESH) {
