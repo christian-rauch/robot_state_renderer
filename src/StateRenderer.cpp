@@ -5,7 +5,7 @@
 #define DISP_FREE_VIS "free_view_vis"
 #define DISP_ROBO_VIS "robot_view_vis"
 
-StateRenderer::StateRenderer(const std::string default_urdf_path, const bool advertise_service) {
+StateRenderer::StateRenderer(const std::string default_urdf_path, const bool advertise_service, const bool default_offscreen) {
 
     if(advertise_service) {
         n = std::make_shared<ros::NodeHandle>();
@@ -17,7 +17,9 @@ StateRenderer::StateRenderer(const std::string default_urdf_path, const bool adv
     robot.loadJointNames();
     robot.generateMeshColours(false, true);
 
-    pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 240);
+    const pangolin::Params params = ros::param::param("~offscreen", default_offscreen) ? pangolin::Params({{"scheme", "headless"}}) : pangolin::Params();
+    pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 240, params);
+
     glEnable(GL_DEPTH_TEST);
     // draw a empty (black) frame
     pangolin::FinishFrame();

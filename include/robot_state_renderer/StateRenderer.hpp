@@ -30,7 +30,7 @@ static const std::string LabelFragmentShader = \
 
 class StateRenderer {
 public:
-    StateRenderer(const std::string default_urdf_path = std::string(), const bool advertise_service = true);
+    StateRenderer(const std::string default_urdf_path = std::string(), const bool advertise_service = true, const bool default_offscreen = false);
 
     ~StateRenderer();
 
