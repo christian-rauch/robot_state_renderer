@@ -8,6 +8,7 @@
 #include "RobotModel.hpp"
 #include <pangolin/pangolin.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <image_geometry/pinhole_camera_model.h>
 
 static const std::string LabelVertexShader = \
         "#version 300 es\n"
@@ -62,7 +63,7 @@ private:
 
     pangolin::OpenGlRenderState robot_cam;
 
-    sensor_msgs::CameraInfo camera_info;
+    image_geometry::PinholeCameraModel camera_model;
 
     pangolin::OpenGlRenderState view_cam;
 

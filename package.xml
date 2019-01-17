@@ -59,6 +59,7 @@
   <depend>urdf</depend>
   <depend>pangolin</depend>
   <depend>kdl_parser</depend>
+  <depend>image_geometry</depend>
 
   <exec_depend>message_runtime</exec_depend>
 

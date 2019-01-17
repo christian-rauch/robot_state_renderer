@@ -95,8 +95,8 @@ void StateRenderer::visualise(const uint period_ms) {
 
         /// robot view
 
-        const int w = camera_info.width;
-        const int h = camera_info.height;
+        const int w = camera_model.fullResolution().width;
+        const int h = camera_model.fullResolution().height;
 
         pangolin::Display(DISP_ROBO_VIS).SetAspect(w/double(h));
         pangolin::Display(DISP_ROBO_VIS).Activate(robot_cam);
@@ -174,16 +174,16 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
         res.link_poses.push_back(pose);
     }
 
-    camera_info = req.camera_info;
+    camera_model.fromCameraInfo(req.camera_info);
 
     // render
 
-    const int w = int(camera_info.width);
-    const int h = int(camera_info.height);
-    const double fu = camera_info.K[0];
-    const double fv = camera_info.K[4];
-    const double cx = camera_info.K[2];
-    const double cy = camera_info.K[5];
+    const int w = camera_model.fullResolution().width;
+    const int h = camera_model.fullResolution().height;
+    const double fu = camera_model.fx();
+    const double fv = camera_model.fy();
+    const double cx = camera_model.cx();
+    const double cy = camera_model.cy();
 
     // check camera parameter
     if(w*h==0)        ROS_WARN_STREAM("invalid camera dimension");

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   roslib
   kdl_parser
+  image_geometry
 )
 
 ## System dependencies are found with CMake's conventions
