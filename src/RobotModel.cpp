@@ -100,6 +100,149 @@ void RobotModel::loadLinkMeshes() {
 
                 link_meshes[l->name].push_back(MeshLoader::getMesh(mesh_path));
             }
+            else {
+                // convert primitive shape to mesh
+                // https://github.com/ros-planning/geometric_shapes/blob/melodic-devel/src/mesh_operations.cpp
+                MeshPtr mesh = std::make_unique<Mesh>();
+                switch (vis->geometry->type) {
+                // Sphere
+                case urdf::Geometry::SPHERE: {
+                    const urdf::SphereSharedPtr sphere = std::dynamic_pointer_cast<urdf::Sphere>(vis->geometry);
+
+                    const float r = float(sphere->radius);
+                    const float pi = float(M_PI);
+                    const unsigned int seg = std::max<unsigned int>(6, 0.5 + 2.0 * pi * r / 0.01);
+                    const unsigned int ring = std::max<unsigned int>(6, 2.0 * r / 0.01);
+
+                    float phi, phid;
+                    phid = pi * 2.0f / seg;
+                    phi = 0.0;
+
+                    float theta, thetad;
+                    thetad = pi / (ring + 1);
+                    theta = 0;
+
+                    for (unsigned int i = 0; i < ring; ++i) {
+                        float theta_ = theta + thetad * (i + 1);
+                        for (unsigned int j = 0; j < seg; ++j) {
+                            mesh->vertices.push_back({r * sin(theta_) * cos(phi + j * phid), r * sin(theta_) * sin(phi + j * phid), r * cos(theta_)});
+                        }
+                    }
+                    mesh->vertices.push_back({0.0, 0.0, r});
+                    mesh->vertices.push_back({0.0, 0.0, -r});
+
+                    for (unsigned int i = 0; i < ring - 1; ++i) {
+                        for (unsigned int j = 0; j < seg; ++j) {
+                            unsigned int a, b, c, d;
+                            a = i * seg + j;
+                            b = (j == seg - 1) ? (i * seg) : (i * seg + j + 1);
+                            c = (i + 1) * seg + j;
+                            d = (j == seg - 1) ? ((i + 1) * seg) : ((i + 1) * seg + j + 1);
+                            mesh->faces.push_back({a, c, b});
+                            mesh->faces.push_back({b, c, d});
+                        }
+                    }
+
+                    for (unsigned int j = 0; j < seg; ++j) {
+                        unsigned int a, b;
+                        a = j;
+                        b = (j == seg - 1) ? 0 : (j + 1);
+                        mesh->faces.push_back({ring * seg, a, b});
+
+                        a = (ring - 1) * seg + j;
+                        b = (j == seg - 1) ? (ring - 1) * seg : ((ring - 1) * seg + j + 1);
+                        mesh->faces.push_back({a, ring * seg + 1, b});
+                    }
+                    break;
+                }
+
+                // Box
+                case urdf::Geometry::BOX: {
+                    const urdf::BoxSharedPtr box = std::dynamic_pointer_cast<urdf::Box>(vis->geometry);
+
+                    const float x = float(box->dim.x / 2.0);
+                    const float y = float(box->dim.y / 2.0);
+                    const float z = float(box->dim.z / 2.0);
+
+                    mesh->vertices.push_back({-x, -y, -z});
+                    mesh->vertices.push_back({x, -y, -z});
+                    mesh->vertices.push_back({x, -y, z});
+                    mesh->vertices.push_back({-x, -y, z});
+                    mesh->vertices.push_back({-x, y, z});
+                    mesh->vertices.push_back({-x, y, -z});
+                    mesh->vertices.push_back({x, y, z});
+                    mesh->vertices.push_back({x, y, -z});
+
+                    mesh->faces = { {0, 1, 2}, {2, 3, 0}, {4, 3, 2}, {2, 6, 4}, {7, 6, 2}, {2, 1, 7},
+                                    {3, 4, 5}, {5, 0, 3}, {0, 5, 7}, {7, 1, 0}, {7, 5, 4}, {4, 6, 7} };
+                    break;
+                }
+
+                // Cylinder
+                case urdf::Geometry::CYLINDER: {
+                    const urdf::CylinderSharedPtr cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(vis->geometry);
+
+                    static const unsigned int tot_for_unit_cylinder = 100;
+                    const float r = float(cylinder->radius);
+                    const float h = float(cylinder->length);
+
+                    const float pi = float(M_PI);
+                    const unsigned int tot = std::max<unsigned int>(6, ceil(tot_for_unit_cylinder * r));
+                    const float phid = pi * 2 / tot;
+
+                    const float circle_edge = phid * r;
+                    const unsigned int h_num = ceil(std::abs(h) / circle_edge);
+
+                    float phi = 0;
+                    const float hd = h / h_num;
+
+                    for (unsigned int i = 0; i < tot; ++i) {
+                        mesh->vertices.push_back({r * cos(phi + phid * i), r * sin(phi + phid * i), h / 2});
+                    }
+
+                    for (unsigned int i = 0; i < h_num - 1; ++i) {
+                        for (unsigned int j = 0; j < tot; ++j) {
+                            mesh->vertices.push_back({r * cos(phi + phid * j), r * sin(phi + phid * j), h / 2 - (i + 1) * hd});
+                        }
+                    }
+
+                    for (unsigned int i = 0; i < tot; ++i) {
+                        mesh->vertices.push_back({r * cos(phi + phid * i), r * sin(phi + phid * i), -h / 2});
+                    }
+
+                    mesh->vertices.push_back({0, 0, h / 2});
+                    mesh->vertices.push_back({0, 0, -h / 2});
+
+                    for (unsigned int i = 0; i < tot; ++i) {
+                        mesh->faces.push_back({(h_num + 1) * tot, i, (i == tot - 1) ? 0 : (i + 1)});
+                    }
+
+                    for (unsigned int i = 0; i < tot; ++i) {
+                        mesh->faces.push_back({(h_num + 1) * tot + 1, h_num * tot + ((i == tot - 1) ? 0 : (i + 1)), h_num * tot + i});
+                    }
+
+                    for (unsigned int i = 0; i < h_num; ++i) {
+                        for (unsigned int j = 0; j < tot; ++j) {
+                            int a, b, c, d;
+                            a = j;
+                            b = (j == tot - 1) ? 0 : (j + 1);
+                            c = j + tot;
+                            d = (j == tot - 1) ? tot : (j + 1 + tot);
+
+                            uint start = i * tot;
+                            mesh->faces.push_back({start + b, start + a, start + c});
+                            mesh->faces.push_back({start + b, start + c, start + d});
+                        }
+                    }
+                    break;
+                }
+
+                // Mesh, already processed in if block
+                case urdf::Geometry::MESH: break;
+                }
+
+                link_meshes[l->name].push_back(std::move(mesh));
+            }
 
             if(vis->material!=NULL){
                 // workaround: only the colour of the first visual is recognised
