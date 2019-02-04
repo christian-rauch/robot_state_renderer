@@ -91,7 +91,17 @@ void StateRenderer::visualise(const uint period_ms) {
         const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
         pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
 
+        // render robot links in colour
         robot.render(shader, true);
+
+        // render objects in white
+        for (const auto &[mesh, parent, pose] : objects) {
+            shader.Bind();
+            shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            shader.SetUniform("label_colour", pangolin::Colour::White());
+            shader.Unbind();
+            mesh->render(shader);
+        }
 
         /// robot view
 
@@ -109,7 +119,17 @@ void StateRenderer::visualise(const uint period_ms) {
         shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
         shader.Unbind();
 
+        // render robot links in colour
         robot.render(shader, true);
+
+        // render objects in white
+        for (const auto &[mesh, parent, pose] : objects) {
+            shader.Bind();
+            shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            shader.SetUniform("label_colour", pangolin::Colour::White());
+            shader.Unbind();
+            mesh->render(shader);
+        }
 
         pangolin::FinishFrame();
 
@@ -163,6 +183,29 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     }
 
     robot.updateFrames();
+
+    // additional objects
+    if(req.mesh_path.size()!=req.mesh_pose.size()) {
+        throw std::runtime_error("Number of meshes and poses mismatch!");
+    }
+
+    // load meshes
+    for(const std::string &path : req.mesh_path) {
+        if(!mesh_cache.count(path)) {
+            mesh_cache[path] = MeshLoader::getMesh(path);
+            mesh_cache[path]->renderSetup();
+        }
+    }
+
+    objects.clear();
+    for(size_t i = 0; i<req.mesh_path.size(); i++) {
+        Eigen::Isometry3d pose;
+        tf::poseMsgToEigen(req.mesh_pose[i].pose, pose);
+        std::string parent = req.mesh_pose[i].header.frame_id;
+        if(!parent.size()) { parent=robot.getRootFrame(); }
+        // tuple: {mesh, parent, pose}
+        objects.push_back({mesh_cache.at(req.mesh_path[i]), parent, pose});
+    }
 
     for(const std::pair<std::string, uint> &kv : robot.link_label_id) {
         res.link_names.push_back(kv.first);
@@ -221,6 +264,15 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     shader.Unbind();
 
     robot.render(shader, false);
+
+    // render objects in green
+    for (const auto &[mesh, parent, pose]: objects) {
+        shader.Bind();
+        shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+        shader.SetUniform("label_colour", pangolin::Colour::Green());
+        shader.Unbind();
+        mesh->render(shader);
+    }
 
     glFlush();
 
