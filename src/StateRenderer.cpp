@@ -97,7 +97,12 @@ void StateRenderer::visualise(const uint period_ms) {
         // render objects in white
         for (const auto &[mesh, parent, pose] : objects) {
             shader.Bind();
-            shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            try {
+                shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            }
+            catch(const std::runtime_error &e) {
+                std::cerr << e.what() << std::endl;
+            }
             shader.SetUniform("label_colour", pangolin::Colour::White());
             shader.Unbind();
             mesh->render(shader);
@@ -125,7 +130,12 @@ void StateRenderer::visualise(const uint period_ms) {
         // render objects in white
         for (const auto &[mesh, parent, pose] : objects) {
             shader.Bind();
-            shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            try {
+                shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+            }
+            catch(const std::runtime_error &e) {
+                std::cerr << e.what() << std::endl;
+            }
             shader.SetUniform("label_colour", pangolin::Colour::White());
             shader.Unbind();
             mesh->render(shader);
@@ -153,6 +163,8 @@ void StateRenderer::spin() {
 }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
+
+    res.success = true;
 
     // set state
 
@@ -268,7 +280,13 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     // render objects in green
     for (const auto &[mesh, parent, pose]: objects) {
         shader.Bind();
-        shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+        try {
+            shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+        }
+        catch(const std::runtime_error &e) {
+            res.success = false;
+            res.message = e.what();
+        }
         shader.SetUniform("label_colour", pangolin::Colour::Green());
         shader.Unbind();
         mesh->render(shader);
