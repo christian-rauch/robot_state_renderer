@@ -151,16 +151,7 @@ void StateRenderer::visualise(const uint period_ms) {
     }
 }
 
-void StateRenderer::spin() {
-    while(!pangolin::ShouldQuit() && ros::ok()) {
-        ros::spinOnce();
-        mutex.lock();
-        pangolin::BindToContext(WINDOW_NAME);
-        pangolin::FinishFrame();
-        pangolin::GetBoundWindow()->RemoveCurrent();
-        mutex.unlock();
-    }
-}
+void StateRenderer::spin() { ros::spin(); }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
 
