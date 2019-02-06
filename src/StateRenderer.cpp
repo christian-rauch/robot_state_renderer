@@ -5,19 +5,22 @@
 #define DISP_FREE_VIS "free_view_vis"
 #define DISP_ROBO_VIS "robot_view_vis"
 
-StateRenderer::StateRenderer(const std::string default_urdf_path, const bool advertise_service, const bool default_offscreen) {
+StateRenderer::StateRenderer(const std::string urdf_path, const bool advertise_service, const bool visualise) : visualise(visualise) {
+
+    if(urdf_path.empty()) {
+        throw std::runtime_error("No URDF path provided!");
+    }
 
     if(advertise_service) {
         n = std::make_shared<ros::NodeHandle>();
     }
 
-    const std::string urdf_path = ros::param::param("~urdf_path", default_urdf_path);
     robot.parseURDF(urdf_path);
     robot.loadLinkMeshes();
     robot.loadJointNames();
     robot.generateMeshColours(false, true);
 
-    const pangolin::Params params = ros::param::param("~offscreen", default_offscreen) ? pangolin::Params({{"scheme", "headless"}}) : pangolin::Params();
+    const pangolin::Params params = visualise ? pangolin::Params() : pangolin::Params({{"scheme", "headless"}});
     pangolin::CreateWindowAndBind(WINDOW_NAME, 640, 240, params);
 
     glEnable(GL_DEPTH_TEST);
@@ -45,113 +48,116 @@ StateRenderer::~StateRenderer() {
     pangolin::QuitAll();
 }
 
-void StateRenderer::visualise(const uint period_ms) {
-    if(!is_setup) {
-        mutex.lock();
-        pangolin::BindToContext(WINDOW_NAME);
+void StateRenderer::run(const uint period_ms) {
+    if(visualise) {
+        if(!is_setup) {
+            mutex.lock();
+            pangolin::BindToContext(WINDOW_NAME);
 
-        view_cam = pangolin::OpenGlRenderState(
-            pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
-            pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
-        );
+            view_cam = pangolin::OpenGlRenderState(
+                pangolin::ProjectionMatrix(640,480,420,420,320,240,0.01,100),
+                pangolin::ModelViewLookAt(-1,0,1, 0,0,0, pangolin::AxisZ)
+            );
 
-        view_cam_handler = std::make_unique<pangolin::Handler3D>(view_cam);
+            view_cam_handler = std::make_unique<pangolin::Handler3D>(view_cam);
 
-        pangolin::Display(DISP_FREE_VIS)
-                .SetAspect(640.0/480.0)
-                .SetHandler(view_cam_handler.get());
+            pangolin::Display(DISP_FREE_VIS)
+                    .SetAspect(640.0/480.0)
+                    .SetHandler(view_cam_handler.get());
 
-        pangolin::Display("dual")
-              .SetBounds(0.0, 1.0, 0.0, 1.0)
-              .SetLayout(pangolin::LayoutEqual)
-              .AddDisplay(pangolin::Display(DISP_FREE_VIS))
-              .AddDisplay(pangolin::Display(DISP_ROBO_VIS));
+            pangolin::Display("dual")
+                  .SetBounds(0.0, 1.0, 0.0, 1.0)
+                  .SetLayout(pangolin::LayoutEqual)
+                  .AddDisplay(pangolin::Display(DISP_FREE_VIS))
+                  .AddDisplay(pangolin::Display(DISP_ROBO_VIS));
 
-        pangolin::GetBoundWindow()->RemoveCurrent();
-        mutex.unlock();
-        is_setup = true;
-    }
-
-    while(!pangolin::ShouldQuit()) {
-        mutex.lock();
-        pangolin::BindToContext(WINDOW_NAME);
-
-        // visualisation
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        /// free view
-
-        pangolin::Display(DISP_FREE_VIS).Activate(view_cam);
-
-        shader.Bind();
-        shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
-        shader.Unbind();
-
-        pangolin::glDrawAxis(1);    // robot pose in world
-        const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
-        pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
-
-        // render robot links in colour
-        robot.render(shader, true);
-
-        // render objects in white
-        for (const auto &[mesh, parent, pose] : objects) {
-            shader.Bind();
-            try {
-                shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
-            }
-            catch(const std::runtime_error &e) {
-                std::cerr << e.what() << std::endl;
-            }
-            shader.SetUniform("label_colour", pangolin::Colour::White());
-            shader.Unbind();
-            mesh->render(shader);
+            pangolin::GetBoundWindow()->RemoveCurrent();
+            mutex.unlock();
+            is_setup = true;
         }
 
-        /// robot view
+        while(!pangolin::ShouldQuit()) {
+            mutex.lock();
+            pangolin::BindToContext(WINDOW_NAME);
 
-        const int w = camera_model.fullResolution().width;
-        const int h = camera_model.fullResolution().height;
+            // visualisation
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        pangolin::Display(DISP_ROBO_VIS).SetAspect(w/double(h));
-        pangolin::Display(DISP_ROBO_VIS).Activate(robot_cam);
+            /// free view
 
-        pangolin::glDrawAxis(1);
-        pangolin::glDrawRectPerimeter(-1,-1,1,1);
-        pangolin::glDrawAxis(T_wc, 0.5);
+            pangolin::Display(DISP_FREE_VIS).Activate(view_cam);
 
-        shader.Bind();
-        shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
-        shader.Unbind();
-
-        // render robot links in colour
-        robot.render(shader, true);
-
-        // render objects in white
-        for (const auto &[mesh, parent, pose] : objects) {
             shader.Bind();
-            try {
-                shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
-            }
-            catch(const std::runtime_error &e) {
-                std::cerr << e.what() << std::endl;
-            }
-            shader.SetUniform("label_colour", pangolin::Colour::White());
+            shader.SetUniform("MVP", view_cam.GetProjectionModelViewMatrix());
             shader.Unbind();
-            mesh->render(shader);
+
+            pangolin::glDrawAxis(1);    // robot pose in world
+            const pangolin::OpenGlMatrix T_wc = robot.T_wr*robot.T_cr.Inverse();    // camera pose
+            pangolin::glDrawAxis(T_wc, 0.5);  // camera pose
+
+            // render robot links in colour
+            robot.render(shader, true);
+
+            // render objects in white
+            for (const auto &[mesh, parent, pose] : objects) {
+                shader.Bind();
+                try {
+                    shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+                }
+                catch(const std::runtime_error &e) {
+                    std::cerr << e.what() << std::endl;
+                }
+                shader.SetUniform("label_colour", pangolin::Colour::White());
+                shader.Unbind();
+                mesh->render(shader);
+            }
+
+            /// robot view
+
+            const int w = camera_model.fullResolution().width;
+            const int h = camera_model.fullResolution().height;
+
+            pangolin::Display(DISP_ROBO_VIS).SetAspect(w/double(h));
+            pangolin::Display(DISP_ROBO_VIS).Activate(robot_cam);
+
+            pangolin::glDrawAxis(1);
+            pangolin::glDrawRectPerimeter(-1,-1,1,1);
+            pangolin::glDrawAxis(T_wc, 0.5);
+
+            shader.Bind();
+            shader.SetUniform("MVP", robot_cam.GetProjectionModelViewMatrix());
+            shader.Unbind();
+
+            // render robot links in colour
+            robot.render(shader, true);
+
+            // render objects in white
+            for (const auto &[mesh, parent, pose] : objects) {
+                shader.Bind();
+                try {
+                    shader.SetUniform("M", robot.T_wr*robot.getFramePoseMatrix(parent)*pose.matrix());
+                }
+                catch(const std::runtime_error &e) {
+                    std::cerr << e.what() << std::endl;
+                }
+                shader.SetUniform("label_colour", pangolin::Colour::White());
+                shader.Unbind();
+                mesh->render(shader);
+            }
+
+            pangolin::FinishFrame();
+
+            pangolin::GetBoundWindow()->RemoveCurrent();
+            mutex.unlock();
+
+            ros::spinOnce();
+            std::this_thread::sleep_for(std::chrono::milliseconds(period_ms));
         }
-
-        pangolin::FinishFrame();
-
-        pangolin::GetBoundWindow()->RemoveCurrent();
-        mutex.unlock();
-
-        ros::spinOnce();
-        std::this_thread::sleep_for(std::chrono::milliseconds(period_ms));
+    } // visualise
+    else {
+        ros::spin();
     }
 }
-
-void StateRenderer::spin() { ros::spin(); }
 
 bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res) {
 

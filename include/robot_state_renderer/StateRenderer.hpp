@@ -31,20 +31,29 @@ static const std::string LabelFragmentShader = \
 
 class StateRenderer {
 public:
-    StateRenderer(const std::string default_urdf_path = std::string(), const bool advertise_service = true, const bool default_offscreen = false);
+    /**
+     * @brief StateRenderer construct the renderer
+     * The StateRenderer can be used as stand-alone library or as dedicated
+     * server process. As library, the render method 'render' can directly be
+     * called to benefit from shared memory. As server process, it will advertise
+     * a ROS service and listen for incomming render requests.
+     * If used as stand-alone library within another process, it's recommended
+     * to not advertise the render service and visualise the rendered state.
+     * @param urdf_path path to URDF file with robot definition
+     * @param advertise_service set to true to advertise the render service (default: false)
+     * @param visualise set to true to show the rendered state (default: false)
+     */
+    StateRenderer(const std::string urdf_path = std::string(), const bool advertise_service = false, const bool visualise = false);
 
     ~StateRenderer();
 
     /**
-     * @brief visualise visualise the requested state
+     * @brief run process incomming render requests
+     * This either shows the visualised state and processes one request per rendered state
+     * or runs the ROS event loop without visualisation.
      * @param period_ms delay (in milliseconds) between visualisation, small values will decrease the offscreen rendering speed
      */
-    void visualise(const uint period_ms = 10);
-
-    /**
-     * @brief spin run the ROS event loop without visualisation
-     */
-    void spin();
+    void run(const uint period_ms = 10);
 
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
 
@@ -74,6 +83,8 @@ private:
     std::vector<std::tuple<std::shared_ptr<Mesh>, std::string, Eigen::Isometry3d>> objects;
 
     bool is_setup = false;
+
+    const bool visualise;
 };
 
 #endif // STATERENDERER_HPP
