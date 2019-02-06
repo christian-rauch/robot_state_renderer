@@ -41,6 +41,8 @@ public:
      * to not advertise the render service and visualise the rendered state.
      * @param urdf_path path to URDF file with robot definition
      * @param advertise_service set to true to advertise the render service (default: false)
+     * If the state is visualised in another thread of a  process that already
+     * handles ROS events, this needs to be set to false.
      * @param visualise set to true to show the rendered state (default: false)
      */
     StateRenderer(const std::string urdf_path = std::string(), const bool advertise_service = false, const bool visualise = false);
@@ -49,8 +51,10 @@ public:
 
     /**
      * @brief run process incomming render requests
-     * This either shows the visualised state and processes one request per rendered state
-     * or runs the ROS event loop without visualisation.
+     * This either shows the visualised state and processes one request per rendered
+     * state or runs the ROS single-threaded event loop without visualisation.
+     * This method will return immediately if 'advertise_service' and 'visualise'
+     * are both set to false.
      * @param period_ms delay (in milliseconds) between visualisation, small values will decrease the offscreen rendering speed
      */
     void run(const uint period_ms = 10);
@@ -85,6 +89,8 @@ private:
     bool is_setup = false;
 
     const bool visualise;
+
+    const bool advertise_service;
 };
 
 #endif // STATERENDERER_HPP

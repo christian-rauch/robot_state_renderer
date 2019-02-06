@@ -5,7 +5,9 @@
 #define DISP_FREE_VIS "free_view_vis"
 #define DISP_ROBO_VIS "robot_view_vis"
 
-StateRenderer::StateRenderer(const std::string urdf_path, const bool advertise_service, const bool visualise) : visualise(visualise) {
+StateRenderer::StateRenderer(const std::string urdf_path, const bool advertise_service, const bool visualise)
+    : advertise_service(advertise_service),  visualise(visualise)
+{
 
     if(urdf_path.empty()) {
         throw std::runtime_error("No URDF path provided!");
@@ -150,12 +152,14 @@ void StateRenderer::run(const uint period_ms) {
             pangolin::GetBoundWindow()->RemoveCurrent();
             mutex.unlock();
 
-            ros::spinOnce();
-            std::this_thread::sleep_for(std::chrono::milliseconds(period_ms));
+            if(advertise_service) {
+                ros::spinOnce();
+                std::this_thread::sleep_for(std::chrono::milliseconds(period_ms));
+            }
         }
     } // visualise
     else {
-        ros::spin();
+        if(advertise_service) { ros::spin(); }
     }
 }
 
