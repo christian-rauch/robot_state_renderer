@@ -127,8 +127,8 @@ MeshPtr getMesh(const std::string &path) {
 
     std::vector<aiMatrix4x4> transforms;
 
-    MeshPtr mesh(new Mesh());
-    (*mesh).directory = path.substr(0, path.find_last_of('/'));
+    MeshPtr mesh = std::make_unique<Mesh>();
+    mesh->directory = path.substr(0, path.find_last_of('/'));
 
     getMesh(scene, scene->mRootNode, (*mesh), transforms);
 
@@ -203,7 +203,7 @@ MeshPtr getMesh(const std::string &path) {
 
     //return std::make_shared<Mesh>(mesh);
 //    return std::move<Mesh>(mesh);
-    return std::move(mesh);
+    return mesh;
 }
 
 } // namespace MeshLoader
