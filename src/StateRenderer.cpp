@@ -197,6 +197,10 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     robot.updateFrames();
 
+    // exclude some links from rendering
+    robot.resetSkip();
+    for(const std::string& link : req.exclude_links) { robot.addSkip(link); }
+
     // additional objects
     if(req.mesh_path.size()!=req.mesh_pose.size()) {
         throw std::runtime_error("Number of meshes and poses mismatch!");
