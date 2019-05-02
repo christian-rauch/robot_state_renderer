@@ -126,7 +126,6 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES state_renderer
   CATKIN_DEPENDS message_runtime geometry_msgs roscpp sensor_msgs urdf
-#  DEPENDS system_lib
 )
 
 ###########
@@ -207,7 +206,7 @@ target_link_libraries(${PROJECT_NAME}_node state_renderer)
 #   PATTERN ".svn" EXCLUDE
 # )
 
-install(TARGETS state_renderer
+install(TARGETS state_renderer ${PROJECT_NAME}_node
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})

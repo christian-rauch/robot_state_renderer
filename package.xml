@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>robot_state_renderer</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>The robot_state_renderer package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -55,11 +55,13 @@
   <depend>geometry_msgs</depend>
   <depend>orocos_kdl</depend>
   <depend>roscpp</depend>
+  <depend>roslib</depend>
   <depend>sensor_msgs</depend>
   <depend>urdf</depend>
   <depend>pangolin</depend>
   <depend>kdl_parser</depend>
   <depend>image_geometry</depend>
+  <depend>cv_bridge</depend>
 
   <exec_depend>message_runtime</exec_depend>
 
