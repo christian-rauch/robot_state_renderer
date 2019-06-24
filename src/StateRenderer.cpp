@@ -354,3 +354,11 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     return true;
 }
+
+std::vector<std::string> StateRenderer::getLinkNames() {
+    std::vector<std::string> link_names;
+    for(const std::pair<std::string, uint> &kv : robot.link_label_id) {
+        link_names.push_back(kv.first);
+    }
+    return link_names;
+}

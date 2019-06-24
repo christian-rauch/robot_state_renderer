@@ -61,6 +61,8 @@ public:
 
     bool render(robot_state_renderer::RenderRobotStateRequest &req, robot_state_renderer::RenderRobotStateResponse &res);
 
+    std::vector<std::string> getLinkNames();
+
 private:
     RobotModel robot;
     pangolin::GlSlProgram shader;
