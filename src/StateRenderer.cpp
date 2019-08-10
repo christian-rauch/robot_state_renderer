@@ -206,6 +206,10 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
         throw std::runtime_error("Number of meshes and poses mismatch!");
     }
 
+    if(req.mesh_scale.size()>0 && req.mesh_path.size()!=req.mesh_scale.size()) {
+        throw std::runtime_error("Number of meshes and scales mismatch!");
+    }
+
     // load meshes
     for(const std::string &path : req.mesh_path) {
         if(!mesh_cache.count(path)) {
@@ -216,10 +220,13 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
 
     objects.clear();
     for(size_t i = 0; i<req.mesh_path.size(); i++) {
-        Eigen::Isometry3d pose;
+        Eigen::Affine3d pose;
         tf::poseMsgToEigen(req.mesh_pose[i].pose, pose);
         std::string parent = req.mesh_pose[i].header.frame_id;
         if(!parent.size()) { parent=robot.getRootFrame(); }
+        if(req.mesh_scale.size()>0 && req.mesh_scale[i]>0) {
+            pose.scale(req.mesh_scale[i]);
+        }
         // tuple: {mesh, parent, pose}
         objects.push_back({mesh_cache.at(req.mesh_path[i]), parent, pose});
     }

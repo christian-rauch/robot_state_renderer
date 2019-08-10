@@ -86,7 +86,7 @@ private:
 
     std::map<std::string, std::shared_ptr<Mesh>> mesh_cache;
 
-    std::vector<std::tuple<std::shared_ptr<Mesh>&, std::string, Eigen::Isometry3d>> objects;
+    std::vector<std::tuple<std::shared_ptr<Mesh>&, std::string, Eigen::Affine3d>> objects;
 
     bool is_setup = false;
 
