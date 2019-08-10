@@ -24,7 +24,7 @@ void Mesh::renderSetup() {
     uvbuffer.Upload(uv.data(), sizeof(float)*uv.size()*2);
 
     // load texture
-    if(texture.SizeBytes()>0) {
+    if(texture.IsValid()) {
         gl_texture.Load(texture);
         gl_texture.SetLinear();
     }
@@ -34,7 +34,7 @@ void Mesh::renderSetup() {
 void Mesh::render(pangolin::GlSlProgram &shader) {
     shader.Bind();
 
-    if(texture.SizeBytes()>0) {
+    if(texture.IsValid()) {
         gl_texture.Bind();
 
     vertexbuffer.Bind();
@@ -43,7 +43,7 @@ void Mesh::render(pangolin::GlSlProgram &shader) {
 
     elementbuffer.Bind();
 
-    if(texture.SizeBytes()>0) {
+    if(texture.IsValid()) {
 
         uvbuffer.Bind();
         //glEnableVertexAttribArray(uvbuffer.bo);

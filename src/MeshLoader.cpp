@@ -42,7 +42,12 @@ void getMesh(const aiScene* const scene, const aiNode* const node,
                     aiString path;
                     material->GetTexture(aiTextureType_DIFFUSE, iText, &path);
                     //std::cout<<"diffuse texture at: "<<path.C_Str()<<std::endl;
-                    obj_mesh.texture = pangolin::LoadImage(obj_mesh.directory+'/'+path.C_Str());
+                    try {
+                        obj_mesh.texture = pangolin::LoadImage(obj_mesh.directory+'/'+path.C_Str());
+                    } catch (const std::runtime_error &) {
+                        // ignore "Interlace not yet supported" and invalidate texture
+                        obj_mesh.texture = pangolin::TypedImage();
+                    }
                 } // texture
             } // materials
 
