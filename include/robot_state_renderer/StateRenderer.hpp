@@ -83,9 +83,7 @@ private:
 
     std::unique_ptr<pangolin::Handler3D> view_cam_handler = nullptr;
 
-    std::map<std::string, std::shared_ptr<Mesh>> mesh_cache;
-
-    std::vector<std::tuple<std::shared_ptr<Mesh>&, std::string, Eigen::Affine3d>> objects;
+    std::vector<std::tuple<std::unique_ptr<Mesh>, std::string, Eigen::Affine3d>> objects;
 
     bool is_setup = false;
 

@@ -226,13 +226,6 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
     }
 
     // load meshes
-    for(const std::string &path : req.mesh_path) {
-        if(!mesh_cache.count(path)) {
-            mesh_cache[path] = MeshLoader::getMesh(path);
-            mesh_cache[path]->renderSetup();
-        }
-    }
-
     objects.clear();
     for(size_t i = 0; i<req.mesh_path.size(); i++) {
         Eigen::Affine3d pose;
@@ -243,7 +236,9 @@ bool StateRenderer::render(robot_state_renderer::RenderRobotStateRequest &req, r
             pose.scale(req.mesh_scale[i]);
         }
         // tuple: {mesh, parent, pose}
-        objects.push_back({mesh_cache.at(req.mesh_path[i]), parent, pose});
+        MeshPtr m = MeshLoader::getMesh(req.mesh_path[i]);
+        m->renderSetup();
+        objects.push_back({std::move(m), parent, pose});
     }
 
     for(const std::pair<std::string, uint> &kv : robot.link_label_id) {
