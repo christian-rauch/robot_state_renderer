@@ -9,6 +9,10 @@
 
 #include <pangolin/image/image_io.h>
 
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
+
 namespace MeshLoader {
 
 aiMatrix4x4 getFullT(const std::vector<aiMatrix4x4> &transforms) {
@@ -42,8 +46,10 @@ void getMesh(const aiScene* const scene, const aiNode* const node,
                     aiString path;
                     material->GetTexture(aiTextureType_DIFFUSE, iText, &path);
                     //std::cout<<"diffuse texture at: "<<path.C_Str()<<std::endl;
+                    const std::string texture_path = obj_mesh.directory+'/'+path.C_Str();
+                    if(!fs::exists(texture_path)) { continue; }
                     try {
-                        obj_mesh.texture = pangolin::LoadImage(obj_mesh.directory+'/'+path.C_Str());
+                        obj_mesh.texture = pangolin::LoadImage(texture_path);
                     } catch (const std::runtime_error &) {
                         // ignore "Interlace not yet supported" and invalidate texture
                         obj_mesh.texture = pangolin::TypedImage();
