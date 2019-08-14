@@ -48,11 +48,13 @@ void getMesh(const aiScene* const scene, const aiNode* const node,
                     //std::cout<<"diffuse texture at: "<<path.C_Str()<<std::endl;
                     const std::string texture_path = obj_mesh.directory+'/'+path.C_Str();
                     if(!fs::exists(texture_path)) { continue; }
-                    try {
-                        obj_mesh.texture = pangolin::LoadImage(texture_path);
-                    } catch (const std::runtime_error &) {
-                        // ignore "Interlace not yet supported" and invalidate texture
-                        obj_mesh.texture = pangolin::TypedImage();
+                    if(!obj_mesh.texture.IsValid()) {
+                        try {
+                            obj_mesh.texture = pangolin::LoadImage(texture_path);
+                        } catch (const std::runtime_error &) {
+                            // ignore "Interlace not yet supported" and invalidate texture
+                            obj_mesh.texture = pangolin::TypedImage();
+                        }
                     }
                 } // texture
             } // materials
