@@ -3,11 +3,8 @@
 
 #include <ros/ros.h>
 #include <robot_state_renderer/RenderRobotState.h>
-#include <eigen_conversions/eigen_msg.h>
-#include <cv_bridge/cv_bridge.h>
 #include "RobotModel.hpp"
 #include <pangolin/pangolin.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
 #include <image_geometry/pinhole_camera_model.h>
 
 static const std::string LabelVertexShader = \

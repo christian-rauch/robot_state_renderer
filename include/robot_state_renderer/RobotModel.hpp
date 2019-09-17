@@ -5,7 +5,6 @@
 #include <urdf_world/types.h>
 #include <kdl/tree.hpp>
 #include <kdl/frames.hpp>
-#include <kdl/jntarray.hpp>
 
 #include <set>
 

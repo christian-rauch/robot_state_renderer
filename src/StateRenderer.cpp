@@ -1,5 +1,8 @@
 #include <StateRenderer.hpp>
 #include <thread>
+#include <eigen_conversions/eigen_msg.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 #define WINDOW_NAME "StateRenderer"
 #define DISP_FREE_VIS "free_view_vis"
