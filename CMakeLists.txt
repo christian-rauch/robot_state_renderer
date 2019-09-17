@@ -27,16 +27,12 @@ find_package(PkgConfig)
 
 # Pangolin
 find_package(Pangolin 0.5 REQUIRED)
-include_directories(${Pangolin_INCLUDE_DIRS})
 
 # Assimp
 pkg_check_modules(assimp REQUIRED assimp)
-include_directories(${assimp_INCLUDE_DIRS})
 
 # URDF
 find_package(urdfdom REQUIRED)
-include_directories(${urdfdom_INCLUDE_DIRS})
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -126,6 +122,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES state_renderer
   CATKIN_DEPENDS message_runtime geometry_msgs roscpp sensor_msgs urdf
+  DEPENDS Pangolin
 )
 
 ###########
@@ -135,7 +132,6 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include/robot_state_renderer
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -145,8 +141,11 @@ include_directories(
 # )
 add_library(meshloader src/MeshLoader.cpp src/Mesh.cpp)
 target_link_libraries(meshloader ${assimp_LIBRARIES})
+target_include_directories(meshloader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_state_renderer ${Pangolin_INCLUDE_DIRS} ${assimp_INCLUDE_DIRS})
+
 add_library(robot_model src/RobotModel.cpp)
 target_link_libraries(robot_model meshloader ${Pangolin_LIBRARIES} stdc++fs ${urdfdom_LIBRARIES} ${catkin_LIBRARIES})
+target_include_directories(robot_model PUBLIC ${urdfdom_INCLUDE_DIRS})
 
 add_library(state_renderer src/StateRenderer.cpp)
 target_link_libraries(state_renderer robot_model ${catkin_LIBRARIES})

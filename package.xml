@@ -58,10 +58,10 @@
   <depend>roslib</depend>
   <depend>sensor_msgs</depend>
   <depend>urdf</depend>
-  <depend>pangolin</depend>
-  <depend>kdl_parser</depend>
-  <depend>image_geometry</depend>
-  <depend>cv_bridge</depend>
+  <build_export_depend>pangolin</build_export_depend>
+  <build_depend>kdl_parser</build_depend>
+  <build_depend>image_geometry</build_depend>
+  <build_depend>cv_bridge</build_depend>
 
   <exec_depend>message_runtime</exec_depend>
 
