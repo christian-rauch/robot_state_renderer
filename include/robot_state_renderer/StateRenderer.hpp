@@ -36,13 +36,13 @@ public:
      * a ROS service and listen for incomming render requests.
      * If used as stand-alone library within another process, it's recommended
      * to not advertise the render service and visualise the rendered state.
-     * @param urdf_path path to URDF file with robot definition
+     * @param urdf (1) path to URDF file with robot definition, or (2) XML string with URDF
      * @param advertise_service set to true to advertise the render service (default: false)
      * If the state is visualised in another thread of a  process that already
      * handles ROS events, this needs to be set to false.
      * @param visualise set to true to show the rendered state (default: false)
      */
-    StateRenderer(const std::string urdf_path = std::string(), const bool advertise_service = false, const bool visualise = false);
+    StateRenderer(const std::string urdf, const bool advertise_service = false, const bool visualise = false);
 
     ~StateRenderer();
 

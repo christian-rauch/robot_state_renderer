@@ -8,19 +8,31 @@
 #define DISP_FREE_VIS "free_view_vis"
 #define DISP_ROBO_VIS "robot_view_vis"
 
-StateRenderer::StateRenderer(const std::string urdf_path, const bool advertise_service, const bool visualise)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+
+
+StateRenderer::StateRenderer(const std::string urdf, const bool advertise_service, const bool visualise)
     : advertise_service(advertise_service),  visualise(visualise)
 {
-
-    if(urdf_path.empty()) {
-        throw std::runtime_error("No URDF path provided!");
-    }
 
     if(advertise_service) {
         n = std::make_shared<ros::NodeHandle>();
     }
 
-    robot.parseURDF(urdf_path);
+    if(urdf.empty()) {
+        throw std::runtime_error("No URDF provided!");
+    }
+    else if(urdf.find("<?xml ")!=std::string::npos && urdf.find("</robot>")!=std::string::npos) {
+        robot.parseURDFString(urdf);
+    }
+    else if(fs::is_regular_file(urdf)) {
+        robot.parseURDF(urdf);
+    }
+    else {
+        throw std::runtime_error("Cannot detemine type of URDF parameter!");
+    }
+
     robot.loadLinkMeshes();
     robot.loadJointNames();
     robot.generateMeshColours(false, true);

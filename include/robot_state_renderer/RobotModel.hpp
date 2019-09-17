@@ -33,10 +33,14 @@ private:
 
     std::map<std::string, std::vector<KDL::Frame>> visual_origins;
 
+    void createKinematicTree();
+
 public:
     RobotModel() { }
 
     RobotModel(const std::string &urdf_path);
+
+    void parseURDFString(const std::string &urdf_string);
 
     void parseURDF(const std::string &urdf_path);
 

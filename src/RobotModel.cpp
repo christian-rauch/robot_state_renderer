@@ -42,22 +42,32 @@ std::string getROSPackagePath(const std::string &start_path,
 
 RobotModel::RobotModel(const std::string &urdf_path) {
     parseURDF(urdf_path);
+}
+
+void RobotModel::createKinematicTree() {
+    if(urdf_model==nullptr) {
+        throw std::runtime_error("no robot model");
+    }
+
+    kdl_parser::treeFromUrdfModel(*urdf_model, robot_tree);
     T_wr.SetIdentity();
 }
 
+void RobotModel::parseURDFString(const std::string &urdf_string) {
+    // parse URDF string
+    urdf_model = urdf::parseURDF(urdf_string);
+    createKinematicTree();
+
+    mesh_package_path = std::string();
+}
+
 void RobotModel::parseURDF(const std::string &urdf_path) {
-    // read URDF and create kinematic tree
+    // read URDF file and create kinematic tree
     urdf_model = urdf::parseURDFFile(urdf_path);
-    if(urdf_model!=NULL) {
-        kdl_parser::treeFromUrdfModel(*urdf_model, robot_tree);
-    }
-    else {
-        std::cerr<<"no robot model"<<std::endl;
-    }
+    createKinematicTree();
 
     // get location of urdf package for mesh path
-    const std::string urdf_dir = urdf_path.substr(0, urdf_path.find_last_of('/'));
-    mesh_package_path = getROSPackagePath(urdf_dir);
+    mesh_package_path = getROSPackagePath(urdf_path.substr(0, urdf_path.find_last_of('/')));
 }
 
 void RobotModel::loadLinkMeshes() {
