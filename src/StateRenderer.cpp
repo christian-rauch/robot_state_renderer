@@ -384,3 +384,7 @@ std::vector<std::string> StateRenderer::getLinkNames() {
     }
     return link_names;
 }
+
+const std::string& StateRenderer::getRootFrame() const {
+    return robot.getRootFrame();
+}

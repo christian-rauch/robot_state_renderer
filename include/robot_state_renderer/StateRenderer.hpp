@@ -60,6 +60,8 @@ public:
 
     std::vector<std::string> getLinkNames();
 
+    const std::string& getRootFrame() const;
+
 private:
     RobotModel robot;
     pangolin::GlSlProgram shader;

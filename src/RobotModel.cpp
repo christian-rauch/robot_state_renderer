@@ -71,9 +71,6 @@ void RobotModel::parseURDF(const std::string &urdf_path) {
 }
 
 void RobotModel::loadLinkMeshes() {
-    // get root frame
-    root_frame = urdf_model->getRoot()->name;
-
     std::vector<urdf::LinkSharedPtr> links;
     urdf_model->getLinks(links);
 
@@ -326,7 +323,7 @@ bool RobotModel::hasFrame(const std::string &frame) const {
 KDL::Frame RobotModel::getFramePose(const std::string& frame) {
     // kineamtic chain from root to frame
     KDL::Chain chain;
-    if(!robot_tree.getChain(root_frame, frame, chain)) {
+    if(!robot_tree.getChain(urdf_model->getRoot()->name, frame, chain)) {
         throw std::runtime_error("frame '"+frame+"' is not part of the kinematic chain");
     }
     KDL::ChainFkSolverPos_recursive fk(chain);

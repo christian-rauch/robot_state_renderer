@@ -17,8 +17,6 @@ private:
 
     KDL::Tree robot_tree;
 
-    std::string root_frame;
-
     std::string mesh_package_path;
 
     std::set<std::string> skipMeshes;
@@ -94,7 +92,7 @@ public:
     }
 
     const std::string& getRootFrame() const {
-        return root_frame;
+        return urdf_model->getRoot()->name;
     }
 
     std::map<std::string, std::vector<MeshPtr>> link_meshes;
