@@ -39,25 +39,25 @@ void getMesh(const aiScene* const scene, const aiNode* const node,
     for(uint m=0; m<node->mNumMeshes; m++) {
         const aiMesh* const mesh = scene->mMeshes[node->mMeshes[m]];
         if(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE) {
-            if(scene->HasMaterials()) {
-                const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+//            if(scene->HasMaterials()) {
+//                const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-                for(uint iText(0); iText < material->GetTextureCount(aiTextureType_DIFFUSE); iText++) {
-                    aiString path;
-                    material->GetTexture(aiTextureType_DIFFUSE, iText, &path);
-                    //std::cout<<"diffuse texture at: "<<path.C_Str()<<std::endl;
-                    const std::string texture_path = obj_mesh.directory+'/'+path.C_Str();
-                    if(!fs::exists(texture_path)) { continue; }
-                    if(!obj_mesh.texture.IsValid()) {
-                        try {
-                            obj_mesh.texture = pangolin::LoadImage(texture_path);
-                        } catch (const std::runtime_error &) {
-                            // ignore "Interlace not yet supported" and invalidate texture
-                            obj_mesh.texture = pangolin::TypedImage();
-                        }
-                    }
-                } // texture
-            } // materials
+//                for(uint iText(0); iText < material->GetTextureCount(aiTextureType_DIFFUSE); iText++) {
+//                    aiString path;
+//                    material->GetTexture(aiTextureType_DIFFUSE, iText, &path);
+//                    //std::cout<<"diffuse texture at: "<<path.C_Str()<<std::endl;
+//                    const std::string texture_path = obj_mesh.directory+'/'+path.C_Str();
+//                    if(!fs::exists(texture_path)) { continue; }
+//                    if(!obj_mesh.texture.IsValid()) {
+//                        try {
+//                            obj_mesh.texture = pangolin::LoadImage(texture_path);
+//                        } catch (const std::runtime_error &) {
+//                            // ignore "Interlace not yet supported" and invalidate texture
+//                            obj_mesh.texture = pangolin::TypedImage();
+//                        }
+//                    }
+//                } // texture
+//            } // materials
 
             for(uint v=0; v<mesh->mNumVertices; v++) {
                 // transform each vertice
