@@ -3,7 +3,10 @@
 #include <pangolin/gl/gl.hpp>
 #include <pangolin/gl/glvbo.h>
 
-Mesh::Mesh() {}
+Mesh::~Mesh() {
+    gl_texture.Delete();
+    texture.Deallocate();
+}
 
 void Mesh::renderSetup() {
     //// create buffers

@@ -14,7 +14,7 @@ typedef std::vector< std::array<uint, 3> > Index3DList;
 
 class Mesh {
 public:
-    Mesh();
+    ~Mesh();
 
     Point3DList vertices;
     Point3DList normals;
